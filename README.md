@@ -119,6 +119,12 @@ Per-window predictions: `reports/model_a_windows.csv`. Summaries: `reports/*.jso
 
 ## 6. Your own AFE4950 recordings
 
+**HackEdge layout (raw TI exports + `data_manifest.csv`) is read directly**, no conversion needed:
+```bash
+python scripts/check_recordings.py data/hackedge     # quality, HR/HRV vs own normals, re-test trigger, verdict
+```
+Manifest columns: `file,person,condition,kss,notes` plus optional `wake` (HH:MM), `slept` (hours), `pvt_json` (from `python -m breathbreak.pvt --out ...`) and `recorded_at` (YYYY-MM-DD HH:MM). Rows that have all four optional columns get the schedule + PVT fatigue risk and `OK`/`RETEST`/`ALERT`; others get HRV checks only. The current HackEdge clips (mostly ~30 s, no schedule or PVT) are read and quality-checked, but they cannot produce fatigue verdicts.
+
 Convert TI GUI exports directly (writes the CSV and updates `sessions.csv`):
 ```bash
 python scripts/convert_ti_export.py RAW.csv --out data/own --subject nhat --session rested --kss 3 --baseline
