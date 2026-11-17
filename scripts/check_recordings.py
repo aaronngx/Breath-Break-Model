@@ -71,7 +71,7 @@ def main():
     ap.add_argument("--model", default="models/fatigue_fusion.joblib")
     a = ap.parse_args()
 
-    recs = load_hackedge(a.root, CFG, a.manifest)
+    recs = load_hackedge(a.root, CFG, a.manifest, include_rejected=True)
     bundle = None
     if os.path.exists(a.model):
         from breathbreak.fusion import load_fusion
@@ -79,10 +79,17 @@ def main():
 
     rows = []
     for r in recs:
-        f, q = clip_features(r)
+        qe, qp = r.extra["ecg_quality"], r.extra["ppg_quality"]
         row = {"person": r.subject.replace("hackedge_", ""), "file": r.extra["file"],
                "condition": r.extra["condition"], "kss": r.extra["kss"],
-               "seconds": round(r.extra["duration_s"]), **q, "usable": f is not None}
+               "seconds": round(r.extra["duration_s"]),
+               "ecg_check": qe.reason, "ppg_check": qp.reason if qp is not None else "absent"}
+        if r.signal is None:                       # ECG failed the quality gate: never scored
+            row.update(usable=False, verdict="re-record: " + qe.message())
+            rows.append(row)
+            continue
+        f, q = clip_features(r)
+        row.update(**q, usable=f is not None)
         if f:
             row.update({k: round(v, 1) for k, v in f.items()})
         p, verdict = fusion_verdict(r, bundle)
@@ -103,12 +110,19 @@ def main():
         t.loc[i, "hr_change_bpm"] = round(r.mean_hr - base.mean_hr.median(), 1)
 
     pd.set_option("display.width", 220)
-    cols = ["person", "file", "condition", "seconds", "beats", "usable", "mean_hr", "rmssd",
+    cols = ["person", "file", "condition", "seconds", "ecg_check", "ppg_check", "usable", "mean_hr", "rmssd",
             "hr_change_bpm", "rmssd_change_pct", "hrv_retest", "verdict"]
     print(t[[c for c in cols if c in t]].to_string(index=False))
 
     short = (t.seconds < 60).sum()
-    print(f"\n{len(t)} recordings read, {t.usable.sum()} usable; {short} shorter than 60 s (HRV unreliable).")
+    print(f"\n{len(t)} recordings read, {int(t.usable.sum())} usable; {short} shorter than 60 s (HRV unreliable).")
+    rejected = t[t.ecg_check != "ok"]
+    for _, r in rejected.iterrows():
+        print(f"  ECG rejected  {r.file}: {r.verdict}")
+    bad_ppg = t[~t.ppg_check.isin(["ok", "absent"])]
+    if len(bad_ppg):
+        print(f"  PPG not used in {len(bad_ppg)} recording(s): " +
+              ", ".join(f"{r.file} ({r.ppg_check})" for _, r in bad_ppg.iterrows()))
     print(f"HRV re-test trigger = RMSSD >= {RETEST_RMSSD_DROP:.0%} below the person's other normal recordings.")
     comp = t.dropna(subset=["rmssd_change_pct"])
     if not comp.empty:

@@ -119,6 +119,20 @@ Per-window predictions: `reports/model_a_windows.csv`. Summaries: `reports/*.jso
 
 ## 6. Your own AFE4950 recordings
 
+**Signal-quality gate (`breathbreak/signal_quality.py`).** Every ECG/PPG recording and every live window is checked before use. Data that fails is **flagged and not used**, and the user gets an instruction instead of a number:
+
+| Flag | Meaning / message |
+|---|---|
+| `flatline` | no signal: sensor not worn, not touching skin, or channel off |
+| `clipped` | flat plateaus at the sensor limit: reduce gain / press lighter |
+| `no_rhythm` | PPG has no pulse rhythm: finger not on sensor, movement |
+| `ppg_ecg_mismatch` | optical pulse rate disagrees with ECG (> 8 bpm) |
+| `too_few_beats`, `irregular_beats` | too few clean beats / many rejected intervals: hold still |
+| `beat_shape` | < 80 % of beats match the average beat: movement or loose electrode |
+| `implausible_hr`, `too_short` | heart rate outside 30-200 bpm / recording under 20 s |
+
+On the HackEdge data it rejects the PPG in 8 of 10 files (sensor not capturing) and the ECG of `fatigue/fourth_attempt.csv` (inconsistent beats). Thresholds come from these 10 files plus physiology, so re-check them on new recordings.
+
 **HackEdge layout (raw TI exports + `data_manifest.csv`) is read directly**, no conversion needed:
 ```bash
 python scripts/check_recordings.py data/hackedge     # quality, HR/HRV vs own normals, re-test trigger, verdict
@@ -180,6 +194,7 @@ breathbreak/
   schedule.py      two-process sleepiness prior (hours awake, sleep, clock)
   pvt.py           reaction-time test: scoring + terminal runner
   fusion.py        schedule + PVT model, HRV re-test trigger, OK/RETEST/ALERT
+  signal_quality.py  ECG/PPG quality gate: not worn, noise, clipping, motion -> flagged, not used
   data/            loaders: drozy (+ PVT), mefar, wesad, own
 scripts/
   train_model_a.py  train_model_b.py  realtime_demo.py  make_synthetic_data.py

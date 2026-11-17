@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Storm Research: Modifying the Fatigue Model for ECG-Only Data</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --blue: #2563eb; --blue-dark: #1e3a8a; --ink: #16203a; --muted: #5b6677; --line: #e4e9f2;
+    --bg-soft: #f6f8fc; --green: #15803d; --green-bg: #e9f6ee; --amber: #b45309; --amber-bg: #fdf3e7;
+    --slate: #475569; --slate-bg: #eef1f6; --red: #b91c1c; --red-bg: #fdecec;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Roboto', system-ui, sans-serif; color: var(--ink); background: #eef1f6; line-height: 1.62; font-weight: 400; -webkit-font-smoothing: antialiased; }
+  .page { max-width: 900px; margin: 0 auto; background: #fff; padding: 64px 72px 80px; box-shadow: 0 1px 40px rgba(22,32,58,0.08); }
+  .eyebrow { font-family: 'Roboto Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--blue); margin-bottom: 14px; }
+  h1 { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 40px; line-height: 1.12; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 18px; }
+  .lede { font-size: 17px; color: var(--muted); max-width: 640px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 26px; padding-top: 22px; border-top: 2px solid var(--line); font-family: 'Roboto Mono', monospace; font-size: 12px; color: var(--muted); }
+  .meta-row b { color: var(--ink); font-weight: 600; }
+  .verify-banner { margin-top: 22px; background: var(--green-bg); border: 1px solid #bfe3cc; border-radius: 8px; padding: 13px 18px; font-size: 13px; color: #14532d; display: flex; gap: 10px; align-items: baseline; }
+  .verify-banner b { font-weight: 700; }
+  .verify-banner .tag { font-family: 'Roboto Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; background: var(--green); color: #fff; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; }
+  .howto { margin-top: 18px; border: 1px solid var(--line); border-radius: 8px; padding: 18px 22px; background: var(--bg-soft); }
+  .howto h4 { font-family: 'Roboto Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .howto ul { list-style: none; }
+  .howto li { font-size: 13.5px; color: #2b3950; margin-bottom: 7px; padding-left: 16px; position: relative; }
+  .howto li::before { content: "›"; position: absolute; left: 0; color: var(--blue); font-weight: 700; }
+  .section { margin-top: 56px; }
+  .section-num { font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 600; color: var(--blue); letter-spacing: 0.05em; }
+  h2 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 25px; letter-spacing: -0.01em; color: var(--ink); margin: 6px 0 18px; line-height: 1.2; }
+  h2 .bar { display: inline-block; width: 38px; height: 4px; background: var(--blue); border-radius: 2px; vertical-align: middle; margin-right: 14px; }
+  p { margin-bottom: 14px; }
+  p.body-lg { font-size: 16.5px; }
+  .ceo { background: var(--bg-soft); border-left: 5px solid var(--blue); padding: 26px 30px; border-radius: 4px; font-size: 16.5px; }
+  .ceo strong { font-weight: 700; color: var(--blue-dark); }
+  .finding { border: 1px solid var(--line); border-radius: 10px; padding: 24px 26px; margin-bottom: 18px; position: relative; }
+  .finding-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 12px; }
+  .finding-title { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 18px; line-height: 1.3; color: var(--ink); flex: 1; }
+  .finding-rank { font-family: 'Roboto Mono', monospace; font-weight: 600; font-size: 13px; color: #fff; background: var(--ink); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .finding p { font-size: 15px; color: #283449; margin-bottom: 14px; }
+  .rel-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .rel { display: inline-flex; align-items: center; gap: 9px; font-family: 'Roboto Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 12px; border-radius: 20px; }
+  .rel.high { background: #e7f0fe; color: var(--blue); }
+  .rel.medhigh { background: var(--green-bg); color: var(--green); }
+  .rel.medium { background: var(--amber-bg); color: var(--amber); }
+  .rel.low { background: var(--red-bg); color: var(--red); }
+  .score { font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 600; color: var(--ink); }
+  .score b { font-size: 17px; }
+  .score span { color: var(--muted); font-weight: 400; }
+  .chips { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+  .chip-row { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; font-size: 13.5px; }
+  .chip-label { font-family: 'Roboto Mono', monospace; font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
+  .chip-label.sup { background: var(--green-bg); color: var(--green); }
+  .chip-label.chal { background: var(--red-bg); color: var(--red); }
+  .chip-label.fix { background: var(--amber-bg); color: var(--amber); }
+  .chip-row span.who { color: #2b3950; }
+  .chip-row span.who b { font-weight: 600; }
+  .contested { border: 1px dashed var(--amber); background: #fffaf2; border-radius: 10px; padding: 22px 26px; margin-bottom: 18px; }
+  .contested .tag { font-family: 'Roboto Mono', monospace; font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber); }
+  .contested h4 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 16px; color: var(--ink); margin: 6px 0 10px; }
+  .contested p { font-size: 14px; color: #4a3a22; margin-bottom: 0; }
+  .connection { background: linear-gradient(135deg, #16203a 0%, #1e3a8a 100%); color: #eaf0fb; border-radius: 12px; padding: 34px 38px; }
+  .connection h2 { color: #fff; }
+  .connection h2 .bar { background: #6ea8ff; }
+  .connection .section-num { color: #9ec1ff; }
+  .connection p { color: #d3def3; font-size: 16px; }
+  .connection .punch { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 18px; color: #fff; line-height: 1.4; margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.18); }
+  .assume { border: 1px solid var(--line); border-left: 5px solid var(--amber); border-radius: 6px; padding: 24px 28px; background: #fffdf9; }
+  .assume h3 { font-family: 'Montserrat', sans-serif; font-size: 17px; font-weight: 700; color: var(--ink); margin-bottom: 10px; }
+  .assume p { font-size: 15px; color: #3a3320; }
+  .assume p:last-child { margin-bottom: 0; }
+  .action-item { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+  .action-item:last-child { border-bottom: none; }
+  .action-mark { font-family: 'Roboto Mono', monospace; font-weight: 600; font-size: 13px; color: var(--blue); flex-shrink: 0; width: 34px; }
+  .action-item .do { font-weight: 600; color: var(--ink); }
+  .action-item p { font-size: 14.5px; margin-bottom: 0; color: #2b3950; }
+  .frontier { border: 2px dashed var(--blue); border-radius: 12px; padding: 30px 34px; background: var(--bg-soft); }
+  .frontier .q { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 22px; line-height: 1.32; color: var(--blue-dark); margin-bottom: 16px; }
+  .frontier p { font-size: 15px; color: #2b3950; }
+  .oncam { margin-top: 18px; }
+  .oncam-col { border-radius: 10px; padding: 20px 24px; margin-bottom: 14px; }
+  .oncam-col.safe { background: var(--green-bg); border: 1px solid #bfe3cc; }
+  .oncam-col.caveat { background: var(--amber-bg); border: 1px solid #f0d9b5; }
+  .oncam-col.avoid { background: var(--red-bg); border: 1px solid #f3c9c9; }
+  .oncam-col h4 { font-family: 'Roboto Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
+  .oncam-col.safe h4 { color: var(--green); }
+  .oncam-col.caveat h4 { color: var(--amber); }
+  .oncam-col.avoid h4 { color: var(--red); }
+  .oncam-col ul { list-style: none; }
+  .oncam-col li { font-size: 14px; color: #233; margin-bottom: 8px; padding-left: 16px; position: relative; line-height: 1.5; }
+  .oncam-col li::before { content: "•"; position: absolute; left: 0; font-weight: 700; }
+  .oncam-col.safe li::before { color: var(--green); }
+  .oncam-col.caveat li::before { color: var(--amber); }
+  .oncam-col.avoid li::before { color: var(--red); }
+  .refs { margin-top: 56px; padding-top: 26px; border-top: 2px solid var(--line); }
+  .refs h3 { font-family: 'Roboto Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .refs ul { list-style: none; }
+  .refs li { font-size: 12.5px; color: var(--muted); margin-bottom: 11px; padding-left: 16px; position: relative; line-height: 1.5; }
+  .refs li::before { content: "›"; position: absolute; left: 0; color: var(--blue); font-weight: 700; }
+  .refs a { color: #34507e; text-decoration: none; }
+  .refs a:hover { text-decoration: underline; }
+  .refs .vstat { font-family: 'Roboto Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; margin-right: 6px; }
+  .vstat.ok { background: var(--green-bg); color: var(--green); }
+  .vstat.part { background: var(--amber-bg); color: var(--amber); }
+  .vstat.weak { background: var(--red-bg); color: var(--red); }
+  .footer { margin-top: 40px; font-family: 'Roboto Mono', monospace; font-size: 11px; color: #9aa6b8; text-align: center; }
+  @media (max-width: 640px) { .page { padding: 40px 24px 56px; } h1 { font-size: 30px; } }
+  @media print { body { background: #fff; } .page { box-shadow: none; max-width: 100%; padding: 0; } .connection, .oncam-col { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="eyebrow">Storm Research &middot; v2 (verified)</div>
+    <h1>Modifying the Fatigue Model for ECG-Only Data</h1>
+    <p class="lede">A five-lens synthesis: practitioner, academic, skeptic, economist, and historian. Every claim independently checked against its primary source before publication.</p>
+    <div class="meta-row">
+      <span><b>Date</b> &nbsp;17 Nov 2026</span>
+      <span><b>Method</b> &nbsp;5 author-built expert lenses + contradiction map</span>
+      <span><b>Audience</b> &nbsp;BreathBreak team (AFE4950 single-lead ECG, HackEdge data/fatigue + data/normal)</span>
+    </div>
+    <div class="verify-banner">
+      <span class="tag">Verified</span>
+      <span>All 31 citations independently checked against primary sources on 17 Nov 2026. <b>Result: 0 fabricated, 13 corrected, 3 demoted.</b> One figure was false (chip price) and was replaced. Confidence scores reflect post-verification evidence quality.</span>
+    </div>
+    <div class="howto">
+      <h4>How to read this</h4>
+      <ul>
+        <li><b>The panel was author-constructed.</b> All five lenses share one framing, so where they agree, treat it as a strong hypothesis, not independent proof.</li>
+        <li><b>Confidence is scored 1-10</b> on evidence quality: peer-reviewed causal work &gt; official policy/financial data &gt; single commissioned survey &gt; analogy &gt; preprint.</li>
+        <li><b>Measured fact and interpretation are flagged separately.</b> A high score means the data is solid, not that the strategic reading is certain.</li>
+        <li><b>The data in question:</b> 10 TI AFE4950 ECG clips (500 Hz), 8 of them about 30 s long. One person (A) has both "normal" and "sick and tired" recordings. In the team's own test, an RMSSD drop scored AUC 0.33 and a heart-rate rise 0.50 at separating A's two conditions. These are the team's own unpublished results.</li>
+      </ul>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="section-num">01</div>
+    <h2><span class="bar"></span>The 60-Second Summary</h2>
+    <div class="ceo">
+      <p style="margin-bottom:0;">The settled fact: a clean 30-second single-lead ECG gives a valid heart rate and RMSSD (r&nbsp;=&nbsp;0.93 against a 4&ndash;5-minute reference in 3,387 adults), but nothing slower-wave. A single bad beat can inflate RMSSD several-fold. Also settled: physiological models that look accurate on the people they were trained on collapse on new people (real-road HRV: ~85% falling to 44%). And ECG is so individual that a single lead identifies a person ~98% of the time, so a model trained on one person's two recording days learns the day, not the state. The contested part is what ECG-only output is honest to give. The economist and historian say none, other than a re-test trigger. The practitioner says the one person with both conditions is the best demo you have, as a personal "off-baseline" reading. <strong>The modification that every lens supports: stop classifying fatigue from ECG. Instead, quality-gate each clip, compare heart rate and ln RMSSD with that person's own rolling baseline, report "within / outside your usual range", and let an off-baseline reading trigger the reaction-time test, which stays the fatigue judge.</strong> Note that "sick and tired" mostly measures illness (fever alone raises heart rate ~8.5 bpm per &deg;C), and that saying "you may be unwell" edges toward a medical claim.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-num">02</div>
+    <h2><span class="bar"></span>Five Key Findings, Ranked by Reliability</h2>
+
+    <div class="finding">
+      <div class="finding-head"><div class="finding-title">30-second ECG clips support heart rate and RMSSD only, and only if every beat is clean</div><div class="finding-rank">1</div></div>
+      <div class="rel-row"><div class="rel high">Reliability: High</div><div class="score"><b>8</b><span>/10</span></div></div>
+      <p>In the largest validation (Munoz et al. 2015, n=3,387), log RMSSD from 30 s correlated r&nbsp;=&nbsp;0.93 with the 4&ndash;5-minute reference (single 10 s r&nbsp;&asymp;&nbsp;0.85; three 10 s segments averaged r&nbsp;=&nbsp;0.94; 120 s r&nbsp;=&nbsp;0.99). Baek et al. 2015 found minimum windows of 10 s for heart rate and 30 s for RMSSD, with longer ones needed for slower bands, and calls ultra-short HRV a "good surrogate method to assess trends". But one artifact beat raised RMSSD by 413% supine and 269% standing (Bourdillon et al. 2022), and a review of 28 studies found only three used proper agreement statistics, calling ultra-short measures "proxies of proxies" (Shaffer et al. 2020). Score capped at 8 because the validation is mostly at rest, in correlation terms, and in healthy adults.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Academic, Practitioner</b>: Munoz 2015 (PLoS ONE); Baek 2015 (Telemed J E Health); Bourdillon 2022 (JSSM); Shaffer 2020 (Front Neurosci)</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who"><b>Skeptic</b> (partly): 30 s is the floor, not a comfortable margin, and these clips have only ~40&ndash;60 beats.</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who">Munoz recommends "30 s or multiple 10 s" for SDNN, not 30 s alone. Shaffer: 17 of 28 studies did not test criterion validity at all, rather than "most used correlation". Baek does not explicitly say "not a substitute for 5 min".</span></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><div class="finding-title">With one person and few sessions, any classifier accuracy is pseudo-replication</div><div class="finding-rank">2</div></div>
+      <div class="rel-row"><div class="rel high">Reliability: High</div><div class="score"><b>8</b><span>/10</span></div></div>
+      <p>Record-wise splits overstate accuracy compared with subject-wise splits (Saeb et al. 2017). Leakage has been documented in at least 294 papers across 17 fields, and in one case study the ML models' advantage over old logistic models largely disappeared once leakage was fixed (Kapoor &amp; Narayanan 2023). The 86-driver real-road HRV study dropped from ~85% to 44% on unseen drivers (Persson et al. 2021). A 2026 conference paper with an LSTM on 20 sleep-deprived drivers dropped from 87.8% to 61.0%. With one person, a subject-wise split is impossible, and clips from the same session share electrode placement, posture and time of day. The correct unit is the recording session, so use leave-one-session-out and report effect sizes, not accuracy.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Skeptic, Academic</b>: Saeb 2017 (GigaScience); Kapoor &amp; Narayanan 2023 (Patterns); Persson 2021 (IEEE T-ITS)</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who">No one.</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who">The 294-paper figure was compiled from 22 earlier surveys. In the civil-war case, one model kept a small edge (AUC gap 0.14 &rarr; 0.01).</span></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><div class="finding-title">"Sick and tired" mainly measures illness, and a personal-baseline heart rate is what detects it</div><div class="finding-rank">3</div></div>
+      <div class="rel-row"><div class="rel medhigh">Reliability: Medium-High</div><div class="score"><b>7</b><span>/10</span></div></div>
+      <p>In 27 young men with acute febrile infections, mean heart rate was 84 bpm while febrile versus 66.5 bpm after recovery, about 8.5 bpm per &deg;C (Karjalainen &amp; Viitasalo 1986). In a smartwatch study of nearly 5,300 people, 26 of 32 COVID-19 cases (81%) showed changes in heart rate, steps or sleep. A two-tier resting-heart-rate alarm would, in retrospect, have flagged 63% before symptoms (Mishra et al. 2020), but only by comparing each person with their own baseline. The useful ECG-only output is therefore "off your usual baseline", not "fatigued". Person A's ~105 bpm in both conditions fits being unwell throughout. Score is 7: the evidence is solid but indirect for the team's data, and the 63% is a retrospective estimate.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Skeptic, Practitioner</b>: Karjalainen &amp; Viitasalo 1986 (Arch Intern Med); Mishra et al. 2020 (Nat Biomed Eng)</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who"><b>Practitioner</b>: alcohol, training load, poor sleep and stress shift resting heart rate the same way, so it is a non-specific "something changed" signal.</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who">The infections were "acute febrile", not all viral (Mycoplasma is a bacterium). The 63% was not tested prospectively and does not separate COVID-19 from other infections.</span></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><div class="finding-title">ECG markers that lasted had a narrow, reference-checked endpoint or a personal rolling average, never a one-off snapshot of a vague state</div><div class="finding-rank">4</div></div>
+      <div class="rel-row"><div class="rel medhigh">Reliability: Medium-High</div><div class="score"><b>7</b><span>/10</span></div></div>
+      <p>SDNN &lt;50 ms on 24-hour Holter carried 5.3&times; mortality risk after a heart attack (Kleiger 1987, n=808): a hard endpoint and long recordings. The 1996 Task Force described 5-minute and 24-hour recordings as "appropriate options". Consumer single-lead ECG was cleared for one claim only: AliveCor in Nov 2012 (K122356) and the Apple ECG app in Sep 2018 (De Novo DEN180044, atrial fibrillation vs sinus rhythm). Deep-learning ECG worked against labels checked by a reference test: 91,232 Zio ECGs read by cardiologists (Hannun 2019), and low ejection fraction confirmed by echocardiography (Attia 2019; in the EAGLE trial low-EF diagnoses rose from 1.6% to 2.1%, OR 1.32). In athletes, weekly-averaged ln RMSSD tracked change (r&nbsp;=&nbsp;0.72) where single-day values did not (r&nbsp;=&nbsp;&minus;0.06) (Plews et al. 2013). Score is 7: well documented, but an analogy, not a fatigue test.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Historian, Practitioner</b>: Kleiger 1987; Task Force 1996; FDA K122356 / DEN180044; Hannun 2019; Attia 2019 / Yao 2021; Plews 2012/2013; Buchheit 2014</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who">No one. The open question is what plays the role of the "reference test" for fatigue; the lenses converge on the PVT.</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who">EAGLE's "32%" is an odds ratio (absolute +0.5%, ~5 per 1,000). Plews 2012 is a 2-athlete case study in EJAP. The weekly-versus-single-day contrast comes from IJSPP 2013 (a weekly mean, not strictly a rolling average).</span></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><div class="finding-title">The sensor is cheap and wellness claims are easy; validated labels and medical claims are where the cost is</div><div class="finding-rank">5</div></div>
+      <div class="rel-row"><div class="rel medium">Reliability: Medium</div><div class="score"><b>5</b><span>/10</span></div></div>
+      <p>The AFE4950 costs $10.67&ndash;17.42 on Digi-Key, and a Polar H10 strap is about $89, so an ECG signal is no advantage over competitors. FDA's January 2026 General Wellness guidance says FDA does not intend to enforce device rules for low-risk wellness products. Claims about detecting impairment or illness can move a product toward a 510(k): FY2027 fee $28,653, or $7,163 for small businesses, before any clinical study. Subscription "readiness" scores drive revenue (Oura membership $5.99/month; WHOOP ~$1.1B annualized revenue per a third-party estimate) without having to predict fatigue-related errors. Score is 5: prices and fees are primary-sourced, but the strategic reading is interpretation.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Economist</b>: Digi-Key; FDA General Wellness guidance (2026); FDA MDUFA FY2027 fees; Oura; Sacra (WHOOP)</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who"><b>Practitioner</b>: an ECG reading on a demo device is still valuable for engagement and as the trigger that gets the PVT taken.</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who">The chip is $10.67&ndash;17.42, not "$9". FDA "does not intend to enforce" rather than "does not regulate". WHOOP's figure is annualized revenue (third-party), not bookings.</span></div>
+      </div>
+    </div>
+
+    <div class="contested">
+      <div class="tag">Contested signal &middot; monitor, do not assert &middot; confidence 4/10</div>
+      <h4>Single-lead QT / T-wave changes as a fatigue marker</h4>
+      <p>After one night without sleep, QTc max, corrected Tp-e and Tp-e/QT rose (Cakici 2015, n=40 crossover), and QT dispersion increased while staying within normal limits (&Ouml;zer 2008, n=37). These are group-level shifts after total sleep deprivation, measured on 12-lead ECG. They have not been validated as an individual, single-lead marker of everyday tiredness. HackEdge's earlier model leaned on R-peak height and T/R ratio, which mostly change with electrode placement. Do not ship these as fatigue features.</p>
+    </div>
+    <div class="contested">
+      <div class="tag">Contested signal &middot; do not use on 30 s clips &middot; confidence 3/10</div>
+      <h4>ECG-derived breathing rate as an extra fatigue feature</h4>
+      <p>The best of 314 algorithms estimated breathing rate from ECG within &plusmn;4.7 breaths/min (95% limits; Charlton 2016). A 30 s clip contains only about 6&ndash;9 breaths, and no study validates ECG-derived breathing as a fatigue marker. It is reasonable to log it on 5-minute recordings, but not to feed it to a model.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="connection">
+      <div class="section-num">03</div>
+      <h2><span class="bar"></span>The Hidden Connection</h2>
+      <p>The lenses seem to clash. The skeptic says a model trained on person A will learn "which day", so the data is useless. The practitioner says person A is the most valuable data you have. The academic says 30 s clips give valid RMSSD; the historian says snapshots never worked.</p>
+      <p>The link is that ECG is a fingerprint first and a state signal second. Single-lead ECG identifies individuals about 98% of the time, and identification degrades across sessions and electrode placements. That is exactly why cross-person or cross-day classifiers learn identity and session instead of fatigue. It is also why the only setting where ECG reliably reveals a change of state (illness alarms, athlete monitoring, post-MI risk) compares a person with their own repeated, protocol-fixed baseline. The skeptic and the practitioner are describing the same property: one treats it as a trap, the other as a tool.</p>
+      <p class="punch">Treat ECG as a fingerprint, not a thermometer: compare each clip only with the same person's own rolling baseline, and let the reaction-time test do the measuring.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="assume">
+      <h3>The assumption this briefing rests on (and the missing 6th lens)</h3>
+      <p>All five lenses assumed an "off-baseline" ECG flag is a harmless wellness nudge. The missing sixth lens is the clinician or occupational physician. A device that tells a worker they look "possibly unwell", or tells a supervisor, is making a health judgement. That raises questions of medical claims (wellness vs 510(k)), duty of care when a flag is ignored, and privacy of health data. None of the lenses spoke from that seat.</p>
+      <p>The omission that could reverse the advice: if an off-baseline flag is treated as a medical alert, a false negative becomes a liability, and the safer product is no ECG output at all, only the PVT. Keep ECG wording neutral ("outside your usual range &mdash; please take the reaction test"), keep it private to the worker, and never use the words "sick" or "fatigued" for an ECG reading.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-num">04</div>
+    <h2><span class="bar"></span>What To Actually Do Differently</h2>
+    <p class="body-lg" style="color:var(--muted);">Concrete code and protocol changes to the BreathBreak model (<code>check_recordings.py</code>, <code>fusion.py</code>) so it can use ECG-only recordings honestly.</p>
+    <div class="action-item"><div class="action-mark">01</div><div><span class="do">Add a strict quality gate before any feature is computed.</span><p>Reject the whole clip (don't "correct" it) if any RR interval is more than 20% off its neighbours, or if fewer than about 30 clean beats remain. Report "re-record" instead of a number. One artifact can inflate RMSSD 3&ndash;5&times;. Finding 1.</p></div></div>
+    <div class="action-item"><div class="action-mark">02</div><div><span class="do">Use only heart rate and ln RMSSD from clips under 2 minutes, and drop R-height, T/R ratio, LF/HF and ECG-derived breathing.</span><p>Those are the only measures validated at 30 s. Morphology mostly tracks electrode placement, and slow bands need minutes. Finding 1 and the contested sidebars.</p></div></div>
+    <div class="action-item"><div class="action-mark">03</div><div><span class="do">Replace the "fatigue vs normal" classifier with a personal-baseline deviation score.</span><p>For each person, keep a rolling baseline (median and spread) of heart rate and ln RMSSD from their last 5&ndash;7 rested, protocol-fixed readings. Output a z-score and "within / outside your usual range". An outside-range reading triggers the PVT (the existing RETEST path, rate-limited). It never produces a fatigue alert. Findings 3 and 4.</p></div></div>
+    <div class="action-item"><div class="action-mark">04</div><div><span class="do">Evaluate person A leave-one-session-out and report effect sizes, not accuracy.</span><p>Report the change in heart rate and ln RMSSD (normal vs sick) with bootstrap confidence intervals, and state n&nbsp;=&nbsp;1. The team's own result (RMSSD AUC 0.33, heart rate 0.50) says that with this data there is no separable effect, and that is the honest slide. Finding 2.</p></div></div>
+    <div class="action-item"><div class="action-mark">05</div><div><span class="do">Fix the recording protocol so a baseline means something.</span><p>Same posture (seated after 1 minute of rest), same time window, 60 s to 5 min, finger and electrode placement marked. Log caffeine, illness, hours slept and KSS, and run a 3-minute PVT every session. Record rested and tired sessions in alternating order. Findings 1, 3 and 4.</p></div></div>
+    <div class="action-item"><div class="action-mark">06</div><div><span class="do">Keep the ECG output in wellness language and private to the worker.</span><p>"Outside your usual range &mdash; take the 3-minute test", never "sick", "stressed" or "fatigued". This keeps the product within FDA general-wellness wording and the EU rule against workplace stress inference. Finding 5 and the 6th lens.</p></div></div>
+  </section>
+
+  <section class="section">
+    <div class="section-num">04b</div>
+    <h2><span class="bar"></span>What's Safe to Assert</h2>
+    <div class="oncam">
+      <div class="oncam-col safe">
+        <h4>✓ Safe — verified against primary source</h4>
+        <ul>
+          <li>30 s ln RMSSD correlates r&nbsp;=&nbsp;0.93 with a 4&ndash;5-minute reference (Munoz 2015, n=3,387).</li>
+          <li>A single artifact beat inflated RMSSD by 413% supine and 269% standing (Bourdillon 2022).</li>
+          <li>Real-road HRV fell from ~85% to 44% accuracy on unseen drivers (Persson 2021).</li>
+          <li>Fever raised heart rate about 8.5 bpm per &deg;C in acute febrile infections (Karjalainen &amp; Viitasalo 1986).</li>
+          <li>Consumer single-lead ECG is FDA-cleared for atrial fibrillation (AliveCor 2012; Apple 2018), not for fatigue.</li>
+          <li>The AFE4950 costs $10.67&ndash;17.42 on Digi-Key; the FY2027 510(k) fee is $28,653 ($7,163 for small businesses).</li>
+        </ul>
+      </div>
+      <div class="oncam-col caveat">
+        <h4>⚠ Say with a caveat</h4>
+        <ul>
+          <li>An HRV-LSTM fell from 87.8% to 61.0% under leave-one-subject-out (2026 conference paper, 20 drivers).</li>
+          <li>A resting-heart-rate alarm would have flagged 63% of COVID-19 cases before symptoms (retrospective, 32 cases).</li>
+          <li>Single-lead ECG identifies people ~98% of the time (ECG-ID, 89 subjects; 96&ndash;100% figures used 12 leads).</li>
+          <li>Weekly-averaged ln RMSSD tracks training change better than single days (small athlete studies).</li>
+          <li>Sleep deprivation lengthens QTc and Tp-e (group-level, 12-lead, total deprivation, within normal limits).</li>
+        </ul>
+      </div>
+      <div class="oncam-col avoid">
+        <h4>✕ Don't assert</h4>
+        <ul>
+          <li>Any fatigue accuracy from the HackEdge clips (one person, illness-confounded; the team's own AUC was 0.33&ndash;0.50).</li>
+          <li>R-height, T/R ratio or QT as single-lead fatigue markers.</li>
+          <li>ECG-derived breathing rate from 30 s clips as a fatigue feature.</li>
+          <li>"SmartCap costs $1&ndash;2 per worker per day" (2016, source inaccessible) or "AFE4950 is $9" (false).</li>
+          <li>That an off-baseline ECG reading means the person is sick, stressed or fatigued.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-num">05</div>
+    <h2><span class="bar"></span>The Frontier Question</h2>
+    <div class="frontier">
+      <div class="q">How many protocol-fixed baseline readings does one person need before an ECG "off-baseline" flag reliably predicts that their next reaction test will be worse?</div>
+      <p>The academic lens found no peer-reviewed ECG or HRV study that answers how many labelled sessions a personal model needs, and the athlete work hints at "about a week of readings". If the answer is a handful, the ECG becomes a cheap, always-on reason to prompt the PVT. If it takes weeks per worker, ECG adds little over a scheduled PVT and should be dropped from the product. The team can test this directly: record the same few people on several days, ECG plus PVT each session, and see when the baseline starts predicting the PVT.</p>
+    </div>
+  </section>
+
+  <div class="refs">
+    <h3>Evidence base &middot; verification status</h3>
+    <ul>
+      <li><span class="vstat part">Corrected</span> Munoz ML, et al. (2015). Validity of (ultra-)short recordings for heart rate variability measurements. <i>PLoS ONE</i> 10(9):e0138921. n=3,387; ln RMSSD 30 s r=0.932, 3&times;10 s r=0.941, 120 s r=0.986; SDNN: "30 s or multiple 10 s". <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC4586373/">pmc.ncbi.nlm.nih.gov</a></li>
+      <li><span class="vstat part">Corrected</span> Shaffer F, Meehan ZM, Zerr CL (2020). A critical review of ultra-short-term heart rate variability norms research. <i>Front Neurosci</i> 14:594880. 28 studies; only 3 used a priori limits of agreement; "proxies of proxies". <a href="https://www.frontiersin.org/articles/10.3389/fnins.2020.594880/full">frontiersin.org</a></li>
+      <li><span class="vstat part">Corrected</span> Baek HJ, Cho CH, Cho J, Woo JM (2015). Reliability of ultra-short-term analysis as a surrogate of standard 5-min analysis of HRV. <i>Telemed J E Health</i> 21(5):404&ndash;414. n=467; 10 s for HR, 30 s for RMSSD; "good surrogate method to assess trends". <a href="https://doi.org/10.1089/tmj.2014.0104">doi.org</a></li>
+      <li><span class="vstat ok">Confirmed</span> Bourdillon N, Yazdani S, Vesin J-M, Schmitt L, Millet GP (2022). RMSSD is more sensitive to artifacts than frequency-domain parameters. <i>J Sports Sci Med</i> 21(2):260&ndash;266. One artifact: RMSSD +413% supine, +269% standing. <a href="https://jssm.org/jssm-21-260.xml-Fulltext">jssm.org</a></li>
+      <li><span class="vstat weak">Demoted</span> Altini M (2025). "Not all HRV data is created equal." Substack blog (not peer-reviewed). "Protocols matter"; optical sensors unreliable outside complete inactivity. <a href="https://marcoaltini.substack.com/p/not-all-hrv-data-is-created-equal">marcoaltini.substack.com</a></li>
+      <li><span class="vstat ok">Confirmed</span> Persson A, et al. (2021). HRV for classification of alert versus sleep deprived drivers in real road driving conditions. <i>IEEE T-ITS</i> 22(6):3316&ndash;3325. ~85% two-class; 44% subject-independent. <a href="https://ieeexplore.ieee.org/document/9055218">ieeexplore.ieee.org</a></li>
+      <li><span class="vstat ok">Confirmed</span> Saeb S, et al. (2017). The need to approximate the use-case in clinical machine learning. <i>GigaScience</i> 6(5):gix019. <a href="https://academic.oup.com/gigascience/article/6/5/gix019/3071704">academic.oup.com</a></li>
+      <li><span class="vstat ok">Confirmed</span> Kapoor S, Narayanan A (2023). Leakage and the reproducibility crisis in machine-learning-based science. <i>Patterns</i> 4(9):100804. 294 papers, 17 fields (compiled from 22 surveys). <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10499856">pmc.ncbi.nlm.nih.gov</a></li>
+      <li><span class="vstat weak">Demoted</span> Styanidis A, Louren&ccedil;o A, Carreiras C, Ahlstr&ouml;m C, Ziakopoulos A, Yannis G (2026). Temporal modeling of HRV for driver drowsiness detection with LSTM networks. Proc. 8th IRTAD Conference, Athens (conference paper, peer review unclear). 20 drivers; 87.8% 10-fold vs 61.0% LOSO. <a href="https://www.nrso.ntua.gr/geyannis/?p=26284">nrso.ntua.gr</a></li>
+      <li><span class="vstat part">Corrected</span> Karjalainen J, Viitasalo M (1986). Fever and cardiac rhythm. <i>Arch Intern Med</i> 146(6):1169&ndash;1171. 27 young men, acute febrile infections; HR 84 vs 66.5 bpm; ~8.5 bpm per &deg;C. <a href="https://pubmed.ncbi.nlm.nih.gov/2424378/">pubmed.ncbi.nlm.nih.gov</a></li>
+      <li><span class="vstat ok">Confirmed</span> Mishra T, et al. (2020). Pre-symptomatic detection of COVID-19 from smartwatch data. <i>Nat Biomed Eng</i> 4(12):1208&ndash;1220. ~5,300 participants; 26/32 cases (81%) with changes; 63% retrospective pre-symptom alarm estimate. <a href="https://doi.org/10.1038/s41551-020-00640-6">doi.org</a></li>
+      <li><span class="vstat part">Corrected</span> Melzi P, Tolosana R, Vera-Rodriguez R (2022/2023). ECG biometric recognition: review, system proposal, and benchmark evaluation. arXiv:2204.03992; <i>IEEE Access</i> 11:15555&ndash;15566. Single-lead ECG-ID 97.75%; 96&ndash;100% on PTB used 12 leads. <a href="https://arxiv.org/abs/2204.03992">arxiv.org</a></li>
+      <li><span class="vstat part">Corrected</span> Jekova I, Krasteva V, Schmid R (2018). Human identification by cross-correlation and pattern matching of personalized heartbeat. <i>Sensors</i> 18(2):372. Time gap and database size severely affect identification; electrode misplacement suggested, not tested. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC5855038">pmc.ncbi.nlm.nih.gov</a></li>
+      <li><span class="vstat part">Corrected</span> Cakici M, et al. (2015). Negative effects of acute sleep deprivation on left ventricular functions and cardiac repolarization in healthy young adults. <i>PACE</i> 38(6):713&ndash;722. n=40 crossover; Tp-e, QTc max and Tp-e/QT increased. <a href="https://doi.org/10.1111/pace.12534">doi.org</a></li>
+      <li><span class="vstat part">Corrected</span> Ozer O, et al. (2008). Acute sleep deprivation is associated with increased QT dispersion in healthy young adults. <i>PACE</i> 31(8):979&ndash;984. n=37; within normal limits; P-wave dispersion not reported. <a href="https://pubmed.ncbi.nlm.nih.gov/18684254/">pubmed.ncbi.nlm.nih.gov</a></li>
+      <li><span class="vstat ok">Confirmed</span> Charlton PH, et al. (2016). An assessment of algorithms to estimate respiratory rate from the ECG and PPG. <i>Physiol Meas</i> 37(4):610&ndash;626. 314 algorithms; best ECG limits &plusmn;4.7 breaths/min. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC5390977">pmc.ncbi.nlm.nih.gov</a></li>
+      <li><span class="vstat ok">Confirmed</span> Kleiger RE, Miller JP, Bigger JT, Moss AJ (1987). Decreased heart rate variability and its association with increased mortality after acute myocardial infarction. <i>Am J Cardiol</i> 59(4):256&ndash;262. n=808; RR 5.3 for SDNN &lt;50 vs &gt;100 ms. <a href="https://pubmed.ncbi.nlm.nih.gov/3812275/">pubmed.ncbi.nlm.nih.gov</a></li>
+      <li><span class="vstat ok">Confirmed</span> Task Force of the ESC and NASPE (1996). Heart rate variability: standards of measurement, physiological interpretation and clinical use. <i>Circulation</i> 93(5):1043&ndash;1065. <a href="https://pubmed.ncbi.nlm.nih.gov/8598068/">pubmed.ncbi.nlm.nih.gov</a></li>
+      <li><span class="vstat part">Corrected</span> Plews DJ, Laursen PB, Kilding AE, Buchheit M (2012). HRV in elite triathletes. <i>Eur J Appl Physiol</i> 112(11):3729&ndash;3741 (2-athlete case study); Plews et al. (2013) <i>IJSPP</i> 8(6):688&ndash;691: weekly mean r=0.72 vs single day r=&minus;0.06. <a href="https://pubmed.ncbi.nlm.nih.gov/22367011/">pubmed.ncbi.nlm.nih.gov</a></li>
+      <li><span class="vstat ok">Confirmed</span> Buchheit M (2014). Monitoring training status with HR measures: do all roads lead to Rome? <i>Front Physiol</i> 5:73. Combine HR measures with training logs and questionnaires. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3936188/">pmc.ncbi.nlm.nih.gov</a></li>
+      <li><span class="vstat ok">Confirmed</span> FDA 510(k) K122356, AliveCor Heart Monitor for iPhone, cleared 19 Nov 2012. <a href="https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfpmn/pmn.cfm?ID=K122356">accessdata.fda.gov</a></li>
+      <li><span class="vstat ok">Confirmed</span> FDA De Novo DEN180044, Apple ECG App, granted 11 Sep 2018 (AFib vs sinus rhythm, users 22+). <a href="https://www.accessdata.fda.gov/cdrh_docs/pdf18/DEN180044.pdf">accessdata.fda.gov</a></li>
+      <li><span class="vstat ok">Confirmed</span> Hannun AY, et al. (2019). Cardiologist-level arrhythmia detection and classification in ambulatory ECGs using a deep neural network. <i>Nat Med</i> 25(1):65&ndash;69. 91,232 single-lead ECGs, 53,549 patients, 12 classes. <a href="https://pubmed.ncbi.nlm.nih.gov/30617320/">pubmed.ncbi.nlm.nih.gov</a></li>
+      <li><span class="vstat part">Corrected</span> Attia ZI, et al. (2019). <i>Nat Med</i> 25(1):70&ndash;74 (EF &le;35%, AUC 0.93); Yao X, et al. (2021). Artificial intelligence-enabled electrocardiograms for identification of patients with low ejection fraction: a pragmatic, randomized clinical trial (EAGLE). <i>Nat Med</i> 27(5):815&ndash;819. Low EF 1.6% &rarr; 2.1%, OR 1.32 (not a 32% relative risk). <a href="https://www.nature.com/articles/s41591-021-01335-4">nature.com</a></li>
+      <li><span class="vstat part">Corrected</span> TI AFE4950YBGR, Digi-Key (Nov 2026): $17.42 (1), $12.02 (100), $10.67 (3,000). The claimed "$9 at 1,000" was false. <a href="https://www.digikey.com/en/products/detail/texas-instruments/AFE4950YBGR/15856534">digikey.com</a></li>
+      <li><span class="vstat part">Corrected</span> FDA (6 Jan 2026). General Wellness: Policy for Low Risk Devices (final guidance). A compliance policy: FDA does not intend to enforce device requirements on low-risk wellness products. <a href="https://www.fda.gov/regulatory-information/search-fda-guidance-documents/general-wellness-policy-low-risk-devices">fda.gov</a></li>
+      <li><span class="vstat ok">Confirmed</span> FDA MDUFA FY2027 user fees: 510(k) $28,653 standard, $7,163 small business. <a href="https://www.fda.gov/industry/fda-user-fee-programs/medical-device-user-fee-amendments-mdufa-fees">fda.gov</a></li>
+      <li><span class="vstat part">Corrected</span> Sacra (third-party estimate): WHOOP ~$1.1B annualized revenue exiting 2025 (not company-reported; not "bookings"). <a href="https://sacra.com/research/whoop-at-1b-year-growing-103-yoy/">sacra.com</a></li>
+      <li><span class="vstat ok">Confirmed</span> Oura Membership (US): $5.99/month or $69.99/year. <a href="https://ouraring.com/membership">ouraring.com</a></li>
+      <li><span class="vstat ok">Confirmed</span> Polar H10 heart-rate sensor, Polar US store: ~$89 (Nov 2026). <a href="https://www.polar.com/us-en/sensors/h10-heart-rate-sensor">polar.com</a></li>
+      <li><span class="vstat weak">Demoted</span> Equipment World (2016): SmartCap ~$2 per person per day (mining), ~$1 (trucking). Unverified: source blocked, 10 years old. <a href="https://www.equipmentworld.com/technology/article/14965955/smartcap-integrates-camera-free-worker-fatigue-monitoring-into-hard-hats-ball-caps-and-more">equipmentworld.com</a></li>
+    </ul>
+  </div>
+
+  <div class="footer">Storm Research v2 &middot; 31/31 citations independently verified against primary sources, 17 Nov 2026 &middot; 0 fabricated, 13 corrected, 3 demoted &middot; Reliability = evidence quality, not author confidence</div>
+
+</div>
+</body>
+</html>

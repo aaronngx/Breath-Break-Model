@@ -37,11 +37,16 @@ class RealtimeScorer:
         return cls(load_bundle(path), input_fs)
 
     def _features(self, seg):
+        """-> (features or None, clean_frac, Quality). Noise / not-worn windows are never scored."""
+        from .signal_quality import check_ecg, check_ppg
+        q = check_ecg(seg, self.fs, self.cfg) if self.kind == "ecg" else check_ppg(seg, self.fs)
+        if not q.ok:
+            return None, q.metrics.get("clean_frac", 0.0), q
         peaks = S.ecg_rpeaks(seg, self.fs) if self.kind == "ecg" else S.ppg_peaks(seg, self.fs)
         ibi, frac = S.clean_ibi(S.peaks_to_ibi_ms(peaks, self.fs), self.cfg)
         if not S.window_ok(ibi, frac, self.cfg):
-            return None, frac
-        return F.hrv_features(ibi), frac
+            return None, frac, q
+        return F.hrv_features(ibi), frac, q
 
     def _normalize(self, f: dict) -> np.ndarray:
         out = []
@@ -61,12 +66,13 @@ class RealtimeScorer:
         win = int(self.cfg.window_s * self.fs)
 
         if self.baseline is None and len(self.buf) >= need_base:
-            f, frac = self._features(self.buf[:need_base])
+            f, frac, q = self._features(self.buf[:need_base])
             self.buf = self.buf[need_base:]
             self.t += self.cfg.baseline_s
             if f is None:
                 events.append({"type": "baseline_failed", "t_s": self.t, "clean_frac": frac,
-                               "msg": "Signal too noisy - hold still / touch the pad again"})
+                               "reason": q.reason,
+                               "msg": q.message() if not q.ok else "Signal too noisy - hold still / touch the pad again"})
             else:
                 self.baseline = f
                 events.append({"type": "baseline_ready", "t_s": self.t, "baseline": f})
@@ -74,9 +80,11 @@ class RealtimeScorer:
         while self.baseline is not None and len(self.buf) >= win:
             seg, self.buf = self.buf[:win], self.buf[win:]
             self.t += self.cfg.window_s
-            f, frac = self._features(seg)
-            if f is None:                                  # motion / poor contact: skip, don't guess
-                events.append({"type": "window_skipped", "t_s": self.t, "clean_frac": frac})
+            f, frac, q = self._features(seg)
+            if f is None:                                  # noise / not worn / motion: skip, don't guess
+                events.append({"type": "window_skipped", "t_s": self.t, "clean_frac": frac,
+                               "reason": q.reason if not q.ok else "too_few_beats",
+                               "msg": q.message() if not q.ok else "Too few clean heartbeats - hold still."})
                 continue
             p = float(self.b["model"].predict_proba(self._normalize(f))[0, 1])
             a = self.cfg.ema_alpha
