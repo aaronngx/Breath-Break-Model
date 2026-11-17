@@ -14,6 +14,42 @@ Both are evaluated **leave-one-subject-out**: every person is scored by a model 
 
 ---
 
+## 0. Recommended design: schedule + reaction-time test (HRV demoted)
+
+On real data, the HRV-only models (A and B) score at chance for fatigue and flag stress as fatigue, because HRV measures arousal, not sleepiness (details in `storm-reports/`). The recommended scorer is:
+
+| Input | Role |
+|---|---|
+| **Schedule**: hours awake, hours slept, clock time (`breathbreak/schedule.py`, two-process model) | sets the prior |
+| **3-min PVT** reaction-time test (`breathbreak/pvt.py`, runs on the SK-AM62 terminal) | confirms impairment |
+| **HRV** from the AFE4950 ECG | can only ask for an extra PVT (rate-limited to 1 per hour); never raises an alert |
+
+Output: fatigue risk and `OK` / `RETEST` / `ALERT`. **No stress score is ever produced**: under the EU AI Act guidelines, inferring fatigue at work is allowed but general stress monitoring is not.
+
+```bash
+python scripts/evaluate_fusion.py --drozy data/DROZY --wesad data/WESAD   # evaluate + save models/fatigue_fusion.joblib
+python scripts/check_fatigue.py --wake 06:30 --slept 7                     # on the device: check-in + 3-min PVT
+python -m breathbreak.pvt --minutes 3                                      # PVT on its own
+```
+
+Results on DROZY (leave-one-subject-out, one decision per 10-min session; 95% CI bootstrapped over people):
+
+| Model | AUC (95% CI) | Balanced acc. | Within-person AUC |
+|---|---|---|---|
+| **Schedule + 3-min PVT** | **0.89** (0.80–0.97) | **0.77** | **0.96** |
+| Schedule only | 0.79 (0.68–0.92) | 0.64 | 0.96 |
+| PVT only | 0.76 (0.62–0.90) | 0.73 | 0.86 |
+| HRV only (3-min extended features)* | 0.64 (0.47–0.84) | 0.65 | 0.78 |
+| Schedule + PVT + HRV* | 0.77 (0.63–0.90) | 0.72 | 0.83 |
+
+\* On the 29 sessions that have HRV, where schedule + PVT scores 0.86. Adding HRV makes it worse.
+
+HRV retest trigger (RMSSD ≥ 20% below baseline) fires in 41% / 68% of alert / sleep-deprived DROZY windows and 16% / 65% of relaxed / stressed WESAD windows. It is mostly a stress signal, so it is rate-limited and can never alert on its own.
+
+**Limits.** DROZY has 14 people on one fixed protocol, and wake time is not recorded (assumed 07:00 after 8 h sleep), so schedule features alone cannot tell people apart. With only three schedule points, the learned circadian weight is not trustworthy. Recalibrate with your own data (shift-start check-in + PVT + KSS) before relying on the numbers. Self-reported sleep can be gamed; the PVT is the part that is hard to fake.
+
+---
+
 ## 1. Setup
 
 ```bash
@@ -83,7 +119,14 @@ Per-window predictions: `reports/model_a_windows.csv`. Summaries: `reports/*.jso
 
 ## 6. Your own AFE4950 recordings
 
-Export each recording as CSV (`time_s,ecg,ppg`) into `data/own/`, plus `data/own/sessions.csv`:
+Convert TI GUI exports directly (writes the CSV and updates `sessions.csv`):
+```bash
+python scripts/convert_ti_export.py RAW.csv --out data/own --subject nhat --session rested --kss 3 --baseline
+python scripts/convert_ti_export.py RAW2.csv --out data/own --subject nhat --session late --kss 8
+```
+Record **≥ 5 min** per session (the first 2 min are the baseline), run a 3-min PVT at each session, and note the KSS score, hours slept and wake time.
+
+Or export each recording as CSV (`time_s,ecg,ppg`) into `data/own/`, plus `data/own/sessions.csv`:
 ```
 subject,session,file,fs,kss,is_baseline
 nhat,rested,nhat_rested.csv,500,3,1
@@ -128,7 +171,12 @@ breathbreak/
   models.py        Model A / Model B pipelines, save/load
   evaluate.py      leave-one-subject-out, session-order control, stress check
   realtime.py      device-side scorer with baseline + alerting
-  data/            loaders: drozy, mefar, wesad, own
+  schedule.py      two-process sleepiness prior (hours awake, sleep, clock)
+  pvt.py           reaction-time test: scoring + terminal runner
+  fusion.py        schedule + PVT model, HRV re-test trigger, OK/RETEST/ALERT
+  data/            loaders: drozy (+ PVT), mefar, wesad, own
 scripts/
   train_model_a.py  train_model_b.py  realtime_demo.py  make_synthetic_data.py
+  evaluate_fusion.py  check_fatigue.py  convert_ti_export.py
+storm-reports/     verified research briefing on fatigue vs stress sensing
 ```

@@ -25,6 +25,52 @@ def hrv_features(ibi_ms: np.ndarray) -> dict:
     }
 
 
+EXTENDED_FEATURE_NAMES = ("mean_hr", "sdnn", "rmssd", "pnn50", "cvnn",
+                          "lf", "hf", "lfhf", "resp_hz", "sd1sd2", "dfa_a1")
+# how each extended feature is compared with the personal baseline
+LOG_RATIO_FEATURES = {"mean_hr", "sdnn", "rmssd", "cvnn", "lf", "hf", "lfhf", "sd1sd2"}
+
+
+def dfa_alpha1(ibi_ms: np.ndarray) -> float:
+    """Short-term detrended fluctuation exponent (scales 4-16 beats)."""
+    ibi = np.asarray(ibi_ms, dtype=float)
+    y = np.cumsum(ibi - ibi.mean())
+    scales, fluct = np.arange(4, 17), []
+    for n in scales:
+        k = len(y) // n
+        if k < 2:
+            return np.nan
+        seg = y[: k * n].reshape(k, n)
+        t = np.arange(n)
+        res = [np.mean((s - np.polyval(np.polyfit(t, s, 1), t)) ** 2) for s in seg]
+        fluct.append(np.sqrt(np.mean(res)))
+    return float(np.polyfit(np.log(scales), np.log(fluct), 1)[0])
+
+
+def hrv_features_extended(t_beats_s: np.ndarray, ibi_ms: np.ndarray) -> dict:
+    """Time + frequency + nonlinear HRV. Needs ~180 s windows (LF needs >= 2-3 min)."""
+    from scipy import signal as sps
+    ibi = np.asarray(ibi_ms, dtype=float)
+    f = hrv_features(ibi)
+    f.pop("mean_ibi")
+    d = np.diff(ibi)
+    tt = np.arange(t_beats_s[0], t_beats_s[-1], 0.25)            # 4 Hz tachogram
+    r = sps.detrend(np.interp(tt, t_beats_s, ibi))
+    fr, pw = sps.welch(r, fs=4, nperseg=min(256, len(r)))
+
+    def band(lo, hi):
+        m = (fr >= lo) & (fr < hi)
+        return float(np.trapezoid(pw[m], fr[m]))
+
+    lf, hf = band(0.04, 0.15), band(0.15, 0.40)
+    hfm = (fr >= 0.15) & (fr < 0.40)
+    sd1 = np.sqrt(0.5) * d.std(ddof=1)
+    sd2 = np.sqrt(max(2 * f["sdnn"] ** 2 - sd1 ** 2, 1e-6))
+    f.update(lf=lf, hf=hf, lfhf=lf / max(hf, 1e-9), resp_hz=float(fr[hfm][np.argmax(pw[hfm])]),
+             sd1sd2=sd1 / sd2, dfa_a1=dfa_alpha1(ibi))
+    return f
+
+
 def iter_windows(n_samples: int, fs: float, window_s: float, step_s: float):
     w, s = int(window_s * fs), int(step_s * fs)
     for start in range(0, n_samples - w + 1, s):

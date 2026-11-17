@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Storm Research: Making a Fatigue Wearable Work When Heart Signals Can't Tell Tired From Stressed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --blue: #2563eb; --blue-dark: #1e3a8a; --ink: #16203a; --muted: #5b6677; --line: #e4e9f2;
+    --bg-soft: #f6f8fc; --green: #15803d; --green-bg: #e9f6ee; --amber: #b45309; --amber-bg: #fdf3e7;
+    --slate: #475569; --slate-bg: #eef1f6; --red: #b91c1c; --red-bg: #fdecec;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Roboto', system-ui, sans-serif; color: var(--ink); background: #eef1f6; line-height: 1.62; font-weight: 400; -webkit-font-smoothing: antialiased; }
+  .page { max-width: 900px; margin: 0 auto; background: #fff; padding: 64px 72px 80px; box-shadow: 0 1px 40px rgba(22,32,58,0.08); }
+  .eyebrow { font-family: 'Roboto Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--blue); margin-bottom: 14px; }
+  h1 { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 40px; line-height: 1.12; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 18px; }
+  .lede { font-size: 17px; color: var(--muted); max-width: 640px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 26px; padding-top: 22px; border-top: 2px solid var(--line); font-family: 'Roboto Mono', monospace; font-size: 12px; color: var(--muted); }
+  .meta-row b { color: var(--ink); font-weight: 600; }
+  .verify-banner { margin-top: 22px; background: var(--green-bg); border: 1px solid #bfe3cc; border-radius: 8px; padding: 13px 18px; font-size: 13px; color: #14532d; display: flex; gap: 10px; align-items: baseline; }
+  .verify-banner b { font-weight: 700; }
+  .verify-banner .tag { font-family: 'Roboto Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; background: var(--green); color: #fff; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; }
+  .howto { margin-top: 18px; border: 1px solid var(--line); border-radius: 8px; padding: 18px 22px; background: var(--bg-soft); }
+  .howto h4 { font-family: 'Roboto Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .howto ul { list-style: none; }
+  .howto li { font-size: 13.5px; color: #2b3950; margin-bottom: 7px; padding-left: 16px; position: relative; }
+  .howto li::before { content: "›"; position: absolute; left: 0; color: var(--blue); font-weight: 700; }
+  .section { margin-top: 56px; }
+  .section-num { font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 600; color: var(--blue); letter-spacing: 0.05em; }
+  h2 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 25px; letter-spacing: -0.01em; color: var(--ink); margin: 6px 0 18px; line-height: 1.2; }
+  h2 .bar { display: inline-block; width: 38px; height: 4px; background: var(--blue); border-radius: 2px; vertical-align: middle; margin-right: 14px; }
+  p { margin-bottom: 14px; }
+  p.body-lg { font-size: 16.5px; }
+  .ceo { background: var(--bg-soft); border-left: 5px solid var(--blue); padding: 26px 30px; border-radius: 4px; font-size: 16.5px; }
+  .ceo strong { font-weight: 700; color: var(--blue-dark); }
+  .finding { border: 1px solid var(--line); border-radius: 10px; padding: 24px 26px; margin-bottom: 18px; position: relative; }
+  .finding-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 12px; }
+  .finding-title { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 18px; line-height: 1.3; color: var(--ink); flex: 1; }
+  .finding-rank { font-family: 'Roboto Mono', monospace; font-weight: 600; font-size: 13px; color: #fff; background: var(--ink); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .finding p { font-size: 15px; color: #283449; margin-bottom: 14px; }
+  .rel-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .rel { display: inline-flex; align-items: center; gap: 9px; font-family: 'Roboto Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 12px; border-radius: 20px; }
+  .rel.high { background: #e7f0fe; color: var(--blue); }
+  .rel.medhigh { background: var(--green-bg); color: var(--green); }
+  .rel.medium { background: var(--amber-bg); color: var(--amber); }
+  .rel.low { background: var(--red-bg); color: var(--red); }
+  .score { font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 600; color: var(--ink); }
+  .score b { font-size: 17px; }
+  .score span { color: var(--muted); font-weight: 400; }
+  .chips { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+  .chip-row { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; font-size: 13.5px; }
+  .chip-label { font-family: 'Roboto Mono', monospace; font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
+  .chip-label.sup { background: var(--green-bg); color: var(--green); }
+  .chip-label.chal { background: var(--red-bg); color: var(--red); }
+  .chip-label.fix { background: var(--amber-bg); color: var(--amber); }
+  .chip-row span.who { color: #2b3950; }
+  .chip-row span.who b { font-weight: 600; }
+  .contested { border: 1px dashed var(--amber); background: #fffaf2; border-radius: 10px; padding: 22px 26px; margin-bottom: 18px; }
+  .contested .tag { font-family: 'Roboto Mono', monospace; font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber); }
+  .contested h4 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 16px; color: var(--ink); margin: 6px 0 10px; }
+  .contested p { font-size: 14px; color: #4a3a22; margin-bottom: 0; }
+  .connection { background: linear-gradient(135deg, #16203a 0%, #1e3a8a 100%); color: #eaf0fb; border-radius: 12px; padding: 34px 38px; }
+  .connection h2 { color: #fff; }
+  .connection h2 .bar { background: #6ea8ff; }
+  .connection .section-num { color: #9ec1ff; }
+  .connection p { color: #d3def3; font-size: 16px; }
+  .connection .punch { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 18px; color: #fff; line-height: 1.4; margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.18); }
+  .assume { border: 1px solid var(--line); border-left: 5px solid var(--amber); border-radius: 6px; padding: 24px 28px; background: #fffdf9; }
+  .assume h3 { font-family: 'Montserrat', sans-serif; font-size: 17px; font-weight: 700; color: var(--ink); margin-bottom: 10px; }
+  .assume p { font-size: 15px; color: #3a3320; }
+  .assume p:last-child { margin-bottom: 0; }
+  .action-item { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+  .action-item:last-child { border-bottom: none; }
+  .action-mark { font-family: 'Roboto Mono', monospace; font-weight: 600; font-size: 13px; color: var(--blue); flex-shrink: 0; width: 34px; }
+  .action-item .do { font-weight: 600; color: var(--ink); }
+  .action-item p { font-size: 14.5px; margin-bottom: 0; color: #2b3950; }
+  .frontier { border: 2px dashed var(--blue); border-radius: 12px; padding: 30px 34px; background: var(--bg-soft); }
+  .frontier .q { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 22px; line-height: 1.32; color: var(--blue-dark); margin-bottom: 16px; }
+  .frontier p { font-size: 15px; color: #2b3950; }
+  .oncam { margin-top: 18px; }
+  .oncam-col { border-radius: 10px; padding: 20px 24px; margin-bottom: 14px; }
+  .oncam-col.safe { background: var(--green-bg); border: 1px solid #bfe3cc; }
+  .oncam-col.caveat { background: var(--amber-bg); border: 1px solid #f0d9b5; }
+  .oncam-col.avoid { background: var(--red-bg); border: 1px solid #f3c9c9; }
+  .oncam-col h4 { font-family: 'Roboto Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
+  .oncam-col.safe h4 { color: var(--green); }
+  .oncam-col.caveat h4 { color: var(--amber); }
+  .oncam-col.avoid h4 { color: var(--red); }
+  .oncam-col ul { list-style: none; }
+  .oncam-col li { font-size: 14px; color: #233; margin-bottom: 8px; padding-left: 16px; position: relative; line-height: 1.5; }
+  .oncam-col li::before { content: "•"; position: absolute; left: 0; font-weight: 700; }
+  .oncam-col.safe li::before { color: var(--green); }
+  .oncam-col.caveat li::before { color: var(--amber); }
+  .oncam-col.avoid li::before { color: var(--red); }
+  .refs { margin-top: 56px; padding-top: 26px; border-top: 2px solid var(--line); }
+  .refs h3 { font-family: 'Roboto Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .refs ul { list-style: none; }
+  .refs li { font-size: 12.5px; color: var(--muted); margin-bottom: 11px; padding-left: 16px; position: relative; line-height: 1.5; }
+  .refs li::before { content: "›"; position: absolute; left: 0; color: var(--blue); font-weight: 700; }
+  .refs a { color: #34507e; text-decoration: none; }
+  .refs a:hover { text-decoration: underline; }
+  .refs .vstat { font-family: 'Roboto Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; margin-right: 6px; }
+  .vstat.ok { background: var(--green-bg); color: var(--green); }
+  .vstat.part { background: var(--amber-bg); color: var(--amber); }
+  .vstat.weak { background: var(--red-bg); color: var(--red); }
+  .footer { margin-top: 40px; font-family: 'Roboto Mono', monospace; font-size: 11px; color: #9aa6b8; text-align: center; }
+  @media (max-width: 640px) { .page { padding: 40px 24px 56px; } h1 { font-size: 30px; } }
+  @media print { body { background: #fff; } .page { box-shadow: none; max-width: 100%; padding: 0; } .connection, .oncam-col { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="eyebrow">Storm Research &middot; v2 (verified)</div>
+    <h1>Making a Fatigue Wearable Work When Heart Signals Can't Tell Tired From Stressed</h1>
+    <p class="lede">A five-lens synthesis: practitioner, academic, skeptic, economist, and historian. Every claim independently checked against its primary source before publication.</p>
+    <div class="meta-row">
+      <span><b>Date</b> &nbsp;17 Nov 2026</span>
+      <span><b>Method</b> &nbsp;5 author-built expert lenses + contradiction map</span>
+      <span><b>Audience</b> &nbsp;BreathBreak hackathon team (TI AFE4950 + SK-AM62)</span>
+    </div>
+    <div class="verify-banner">
+      <span class="tag">Verified</span>
+      <span>All 27 citations independently checked against primary sources on 17 Nov 2026. <b>Result: 0 fabricated, 12 corrected, 3 demoted.</b> Two unverifiable figures were cut. Confidence scores reflect post-verification evidence quality.</span>
+    </div>
+    <div class="howto">
+      <h4>How to read this</h4>
+      <ul>
+        <li><b>The panel was author-constructed.</b> All five lenses share one framing, so where they agree, treat it as a strong hypothesis, not independent proof.</li>
+        <li><b>Confidence is scored 1-10</b> on evidence quality: peer-reviewed causal work &gt; official policy/financial data &gt; single commissioned survey &gt; analogy &gt; preprint.</li>
+        <li><b>Measured fact and interpretation are flagged separately.</b> A high score means the data is solid, not that the strategic reading is certain.</li>
+        <li><b>Context:</b> the team's own tests (DROZY, MEFAR, WESAD, leave-one-subject-out) found HRV-only models at chance (AUC 0.44&ndash;0.48), beaten by an "hours awake" control (0.76; 0.91 within-person), with 70&ndash;100% of stress windows flagged as fatigue. Those are the team's own unpublished results, not citations.</li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- ============ 01 CEO SUMMARY ============ -->
+  <section class="section">
+    <div class="section-num">01</div>
+    <h2><span class="bar"></span>The 60-Second Summary</h2>
+    <div class="ceo">
+      <p style="margin-bottom:0;">The settled fact: heart-rate variability does shift with sleep loss, but it is not specific to it. It tracks autonomic arousal, so stress, posture, caffeine and workload move it the same way. When models are tested on people they never saw, accuracy collapses (one 86-driver real-road study fell from ~85% to 44%). That is exactly what the team's own data showed. What the field actually relies on is (1) sleep/wake history plus time of day, and (2) behaviour that degrades with sleepiness, such as eye closure (PERCLOS) or attention lapses on a reaction-time test. The contested part is whether any wearable physiology adds value on top of those. The one published real-road comparison found the jump came from adding driving time and day/night, not from better physiology. <strong>So the fix is not a better HRV classifier: make time awake and circadian phase the core of the score, add a cheap sleepiness-specific test, and use heart data only to adjust or veto per person, never to label someone "stressed".</strong> That last point is also a legal one: under the EU AI Act, inferring fatigue is allowed, but general stress monitoring of workers is not.</p>
+    </div>
+  </section>
+
+  <!-- ============ 02 KEY FINDINGS ============ -->
+  <section class="section">
+    <div class="section-num">02</div>
+    <h2><span class="bar"></span>Five Key Findings, Ranked by Reliability</h2>
+
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">HRV moves with sleep loss, but it is inconsistent across studies and fails on unseen people</div>
+        <div class="finding-rank">1</div>
+      </div>
+      <div class="rel-row">
+        <div class="rel high">Reliability: High</div>
+        <div class="score"><b>8</b><span>/10</span></div>
+      </div>
+      <p>A systematic review of 18 driver studies found inconsistent alert-vs-fatigued HRV differences and detection accuracy from 44% to 100%. A second review (19 studies, all observational, quality rated low) reported sensitivity of 47.1&ndash;95%. In the largest real-road study (86 drivers), random forest reached ~85% for two classes, but <b>subject-independent accuracy dropped to 44%</b>, and the authors call HRV alone a poor indicator. A 2025 meta-analysis (11 trials, n=549) found sleep deprivation raises LF and LF/HF, but the RMSSD drop was borderline (SMD &minus;0.24) and heterogeneity was very high (I&sup2;=91%). Score capped at 8 because the studies are mostly simulator or lab work with small samples.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Academic, Skeptic, Practitioner</b>: Lu et al. 2022 (AAP); Burlacu et al. 2021 (RCM); Persson et al. 2021 (IEEE T-ITS); Zhang et al. 2025 (Front Neurol)</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who">No one. Even the most positive studies report the subject-independent drop.</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who">Persson 3-class accuracy is 64% (not 61%; 61% is their 2019 conference paper). The 44% subject-independent figure was added. In the meta-analysis only 4 studies reported RMSSD, and LF also rose.</span></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">Inferring fatigue is legal under the EU AI Act; general stress monitoring of workers is not</div>
+        <div class="finding-rank">2</div>
+      </div>
+      <div class="rel-row">
+        <div class="rel high">Reliability: High</div>
+        <div class="score"><b>8</b><span>/10</span></div>
+      </div>
+      <p>Article 5(1)(f) of the AI Act, applicable from 2 Feb 2025, bans emotion recognition in the workplace. The Commission's guidelines say fatigue is a physical state, not an emotion, and give inferring a pilot's or driver's fatigue as an example of what is "not emotion recognition". But "the general monitoring of stress levels at the workplace is not permitted under health or safety aspects" (para 257). Stress inference is only allowed where an elevated stress level would pose a specific danger, such as around dangerous machines. Separately, the EU General Safety Regulation made Driver Drowsiness and Attention Warning mandatory on all new vehicles registered from 7 July 2024. Score is 8, not higher, because these are guidelines, not court rulings.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Skeptic, Economist</b>: Reg. (EU) 2024/1689 and the Commission Guidelines (2025); Reg. (EU) 2019/2144</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who">No one. The open question is enforcement.</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who">Fatigue is excluded from the ban because the guidelines say it is not an emotion, not through a "safety carve-out". The stress exception is narrower than the lens implied.</span></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">Context (time awake, time of day) carries most of the predictive power</div>
+        <div class="finding-rank">3</div>
+      </div>
+      <div class="rel-row">
+        <div class="rel medhigh">Reliability: Medium-High</div>
+        <div class="score"><b>7</b><span>/10</span></div>
+      </div>
+      <p>In a 43-driver real-road study using consumer wearables, HRV alone gave AUC 0.76. Adding driving time and day/night raised it to 0.88, so the gain came from context, not from better physiology. This matches the team's DROZY result: hours awake alone scored 0.76 per session and 0.91 within each person, and adding the upgraded HRV features barely changed it (0.78). Trait-like individual differences in vulnerability to sleep loss (ICC 0.68&ndash;0.92) mean a population model will misjudge some individuals, so context sets the prior but cannot be the whole answer. Score is 7: one peer-reviewed study plus the team's own replication.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Academic, Practitioner, Historian, Skeptic</b>: Lu et al. 2022 (IEEE T-ITS); Van Dongen et al. 2004 (SLEEP)</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who"><b>Academic</b> (partly): sleep-history models are validated only at population level, so individuals need personal calibration.</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who">Van Dongen ICC range is 68&ndash;92% in the 2004 study; the 58% lower bound comes from an earlier study.</span></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">The validated references are behavioural (eye closure, PVT lapses) and schedule models, used together, never one alone</div>
+        <div class="finding-rank">4</div>
+      </div>
+      <div class="rel-row">
+        <div class="rel medhigh">Reliability: Medium-High</div>
+        <div class="score"><b>7</b><span>/10</span></div>
+      </div>
+      <p>In the FHWA/NHTSA study (14 people, 42 hours awake), only PERCLOS (the share of time the eyes are mostly closed) correlated highly with lapses on a reaction-time test (the psychomotor vigilance test, PVT), both within and between subjects. It beat two EEG algorithms, two blink monitors and self-rated sleepiness. Per-subject correlations averaged about 0.87 (n=10 scorable, range 0.55&ndash;0.97). The Australian aviation regulator's guidance on biomathematical fatigue models says model predictions "cannot form the sole means" for operational decisions. The polygraph is the cautionary parallel: the National Research Council concluded that arousal measures carry an "inherent ambiguity" that better technique can only modestly fix. Score is 7: a government report rather than a journal paper, with a small sample.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Historian, Academic, Practitioner</b>: FHWA Tech Brief 1998 (Dinges &amp; Grace); CASA 2010; NRC 2003</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who"><b>Skeptic</b> (indirectly): ocular systems need a camera or glasses, which do not fit every worker or a chest or finger sensor.</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who">"r&nbsp;&asymp;&nbsp;0.875" is a mean derived from the brief's table, not a stated figure. The cited URL is the 4-page Tech Brief, not the full report.</span></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">The money is in compliance and audit trails, not in classifier accuracy</div>
+        <div class="finding-rank">5</div>
+      </div>
+      <div class="rel-row">
+        <div class="rel medium">Reliability: Medium</div>
+        <div class="score"><b>5</b><span>/10</span></div>
+      </div>
+      <p>The mandated market is camera-based and still losing money. Seeing Machines reported FY2025 revenue of US$62.3M and an adjusted EBITDA loss of US$30.1M, even after the EU mandate. The big valuations go to consumer "readiness" scores (Oura's &gt;$900M raise at ~$11B; WHOOP at $3.6B in 2021) whose formulas no manufacturer disclosed and few validated. The one peer-reviewed deployment study (Fitzharris et al. 2017) found in-cab alerts cut fatigue events 66.2%, rising to 94.4% with feedback to the employer. That points to the response loop, not the sensor, but the data is vendor-linked. Score is 5: financial facts are solid, but the strategic reading rests on vendor evidence.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Economist, Practitioner</b>: Seeing Machines FY2025 results; Oura (company announcement Oct 2025); Doherty et al. 2025 (TEB); Fitzharris et al. 2017 (TIP)</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who"><b>Skeptic</b>: alerts and escalation feed "you're tired, you're fired" fears. Bongers &amp; Fisher 2016 (vendor authors) list this as a worker concern.</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who">Fitzharris used one company's vendor-monitored data and has an author linked to Seeing Machines. Oura's figures come from the company, with revenue press-reported. The NSC per-employee range ($1,200&ndash;3,100) could not be verified and was cut.</span></div>
+      </div>
+    </div>
+
+    <div class="contested">
+      <div class="tag">Contested signal &middot; monitor, do not assert &middot; confidence 4/10</div>
+      <h4>Skin conductance (EDA) or skin temperature could separate stress from sleepiness</h4>
+      <p>The idea is that stress raises skin conductance while sleepiness lowers arousal, and that distal skin warming precedes sleep onset. In the largest test (Kurinec et al. 2022, n=193, 38 hours of sleep deprivation), non-specific skin conductance responses did change with sleep loss, but those changes did not moderate the effect on sleepiness or vigilant attention. So EDA tracks sleep loss at group level, not individual impairment. The skin-temperature evidence (Kr&auml;uchi 1999/2000) concerns how fast people fall asleep in bed, not alertness at work. Worth testing as an extra input; do not claim it solves the stress confound.</p>
+    </div>
+    <div class="contested">
+      <div class="tag">Contested signal &middot; vendor claims &middot; confidence 3/10</div>
+      <h4>"97%" and "98%" fatigue reductions from mining deployments</h4>
+      <p>Caterpillar's Driver Safety System (DSS) figure at the PotashCorp Aurora mine (North Carolina) covers fatigue and distraction events combined, across a phased rollout, and comes only from trade press. Cat's own page gives 80% for average fatigue events. Optalert's 98% is a drop in alerts per operating hour at an unnamed mine, with no baseline. Do not quote either as independent evidence.</p>
+    </div>
+  </section>
+
+  <!-- ============ 03 HIDDEN CONNECTION ============ -->
+  <section class="section">
+    <div class="connection">
+      <div class="section-num">03</div>
+      <h2><span class="bar"></span>The Hidden Connection</h2>
+      <p>On the surface the findings pull in different directions. The academic says HRV really does change with sleep loss, while the skeptic and the team's own data say it is useless for detection. The economist says buyers don't pay for accuracy, while the practitioner says detection only matters if someone responds to the alert.</p>
+      <p>All of these follow from one fact: HRV measures arousal, and fatigue is defined by sleep history and the body clock. Because HRV measures arousal, it fails on unseen people, since everyone's arousal baseline and stressors differ. For the same reason it becomes legally risky: a model that partly detects stress is close to banned workplace stress monitoring. The polygraph shows the same pattern: an arousal sensor cannot tell you why arousal changed. And hours awake wins because it is a direct measure of what fatigue actually is.</p>
+      <p class="punch">Make the clock the detector and the heart the referee: time awake and circadian phase decide the risk, a reaction-time test confirms impairment, and HRV only adjusts the score per person or explains it away.</p>
+    </div>
+  </section>
+
+  <!-- ============ 03b KEY ASSUMPTION ============ -->
+  <section class="section">
+    <div class="assume">
+      <h3>The assumption this briefing rests on (and the missing 6th lens)</h3>
+      <p>All five lenses assumed that "fatigue" means sleepiness from sleep loss, measured by self-report (KSS) or reaction-time lapses, and that the wearer will put the device on and accept being scored. None of them spoke for the worker wearing it. The missing sixth lens is the worker and their representatives: occupational health, unions, and the person who gets the alert. That lens decides whether the device is worn at all (practitioners report it is hard to get operators to wear devices every night), whether alerts are trusted or ignored, and whether escalation reads as care or as discipline.</p>
+      <p>The omission that could reverse these conclusions: if workers game or refuse a schedule-and-test system, a passive physiological signal might be the only data you get, even though it is weaker. Build with consent, worker-owned data, and "help, not punish" response rules from day one.</p>
+    </div>
+  </section>
+
+  <!-- ============ 04 ACTIONABLE INSIGHT ============ -->
+  <section class="section">
+    <div class="section-num">04</div>
+    <h2><span class="bar"></span>What To Actually Do Differently</h2>
+    <p class="body-lg" style="color:var(--muted);">For the BreathBreak team building on the TI AFE4950 sensor and SK-AM62 board: specific changes to the model, the device and the pitch.</p>
+    <div class="action-item">
+      <div class="action-mark">01</div>
+      <div><span class="do">Make a fatigue-risk score from hours awake, sleep in the last 24 hours, and time of day the core of the model.</span><p>Collect sleep and wake time with a two-tap check-in at shift start, plus the shift clock. Implement a simple two-process model: sleep pressure rising with time awake, plus a 24-hour circadian curve. On DROZY this information alone reached 0.91 within each person, versus 0.59 for the best HRV model. Findings 3 and 4.</p></div>
+    </div>
+    <div class="action-item">
+      <div class="action-mark">02</div>
+      <div><span class="do">Add a 2&ndash;3 minute reaction-time test (a PVT) on the SK-AM62 at shift start and at each break.</span><p>Count lapses (reactions slower than 500 ms). This is the behavioural ground truth that PERCLOS was validated against, it needs no camera, and it measures sleepiness rather than arousal. It also gives you labelled data to recalibrate each worker. Finding 4.</p></div>
+    </div>
+    <div class="action-item">
+      <div class="action-mark">03</div>
+      <div><span class="do">Demote HRV to a per-person modifier and a veto, and report its added value honestly.</span><p>Use the AFE4950 ECG to (a) lower the alert when vagal tone is normal for that person and (b) flag "something changed" for a follow-up PVT. The headline metric becomes: leave-one-subject-out gain over the schedule-only model, with WESAD stress as an explicit negative test. If the gain is zero, say so. That is what the 86-driver study found too. Findings 1 and 3.</p></div>
+    </div>
+    <div class="action-item">
+      <div class="action-mark">04</div>
+      <div><span class="do">Never output, display or log a "stress" score; output only fatigue risk.</span><p>General stress monitoring of workers is not permitted under the EU AI Act guidelines, while fatigue inference is not emotion recognition. Remove stress wording from the app, the slides and the stored data, and keep the HRV veto internal. Finding 2.</p></div>
+    </div>
+    <div class="action-item">
+      <div class="action-mark">05</div>
+      <div><span class="do">Design the response loop first: alert, breathing break, re-test, then optional escalation, with worker-visible logs.</span><p>The peer-reviewed deployment data (vendor-linked) suggests the response, not the sensor, drives the reduction: 66% with an in-cab alert, 94% with employer feedback. Buyers pay for the audit trail. Put the "help, not punish" rule in writing, as even vendor authors advise. Finding 5 and the 6th lens.</p></div>
+    </div>
+    <div class="action-item">
+      <div class="action-mark">06</div>
+      <div><span class="do">Tell the honest story on the slide: "HRV can't tell tired from stressed, so we don't ask it to."</span><p>Show the team's own result (HRV at chance, hours awake 0.76/0.91, stress false alarms 70&ndash;100%) next to Persson 2021 (85% falling to 44% on unseen drivers). A validated negative result, plus a design that answers it, is stronger than an inflated accuracy number. Finding 1.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ 04b CLAIM SAFETY GUIDE ============ -->
+  <section class="section">
+    <div class="section-num">04b</div>
+    <h2><span class="bar"></span>What's Safe to Assert</h2>
+    <div class="oncam">
+      <div class="oncam-col safe">
+        <h4>✓ Safe — verified against primary source</h4>
+        <ul>
+          <li>A review of 18 studies found HRV-based driver fatigue detection accuracy ranging from 44% to 100% (Lu et al. 2022).</li>
+          <li>In an 86-driver real-road study, HRV accuracy was ~85% within-sample but 44% on unseen drivers (Persson et al. 2021).</li>
+          <li>Adding driving time and day/night raised wearable HRV detection from AUC 0.76 to 0.88 (Lu et al. 2022, IEEE T-ITS).</li>
+          <li>PERCLOS was the only measure tested that correlated highly with PVT lapses within and between subjects (FHWA 1998).</li>
+          <li>Under the EU AI Act guidelines, inferring fatigue is not emotion recognition; general workplace stress monitoring is not permitted.</li>
+          <li>Driver drowsiness warning has been mandatory on all new EU vehicle registrations since 7 July 2024.</li>
+          <li>Seeing Machines: FY2025 revenue US$62.3M, adjusted EBITDA loss US$30.1M.</li>
+        </ul>
+      </div>
+      <div class="oncam-col caveat">
+        <h4>⚠ Say with a caveat</h4>
+        <ul>
+          <li>Sleep deprivation raises LF/HF and lowers RMSSD (meta-analysis; RMSSD effect borderline, very high heterogeneity).</li>
+          <li>Vulnerability to sleep loss is trait-like (ICC 0.68&ndash;0.92; one study, n=21).</li>
+          <li>Feedback to the employer raised fatigue-event reduction from 66% to 94% (peer-reviewed but vendor-linked, single company).</li>
+          <li>Oura ~$11B valuation (company announcement; revenue press-reported). NSC: fatigue costs ~$1.4M per year per 1,000 employees (2017 calculator).</li>
+          <li>Biomathematical models are validated at population level only and should not be the sole basis for decisions (CASA 2010).</li>
+        </ul>
+      </div>
+      <div class="oncam-col avoid">
+        <h4>✕ Don't assert</h4>
+        <ul>
+          <li>"HRV detects fatigue with 85&ndash;100% accuracy" (within-sample or best-case figures only).</li>
+          <li>Caterpillar "97%" or Optalert "98%" as independent evidence (vendor or trade press; different metrics).</li>
+          <li>"$1,200&ndash;3,100 per employee" fatigue cost (no primary source found).</li>
+          <li>"Skin conductance or temperature separates stress from fatigue" (group-level only; not validated for individuals).</li>
+          <li>That BreathBreak measures or detects stress (legal exposure, and the team's own data says it is a confound).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 05 FRONTIER QUESTION ============ -->
+  <section class="section">
+    <div class="section-num">05</div>
+    <h2><span class="bar"></span>The Frontier Question</h2>
+    <div class="frontier">
+      <div class="q">Does any wearable signal add predictive value on top of a sleep-history and circadian model, when tested on unseen people with stress as an explicit negative condition?</div>
+      <p>Every lens circled this question without asking it directly. If the answer is no, a fatigue wearable is really a scheduling and testing tool with a sensor attached, and the hardware's value is getting the device worn and the alert answered. If the answer is yes for some signal (personalised HRV, PVT plus HRV, or a specific sleepiness marker), that signal is the product. It is cheap to test: the team already has DROZY (sleep loss), WESAD (stress) and a working leave-one-subject-out pipeline. On DROZY the first answer was "barely" (0.76 to 0.78), but with 11 people and 29 sessions that is far from settled.</p>
+    </div>
+  </section>
+
+  <!-- ============ REFERENCES ============ -->
+  <div class="refs">
+    <h3>Evidence base &middot; verification status</h3>
+    <ul>
+      <li><span class="vstat ok">Confirmed</span> Lu K, Sj&ouml;rs Dahlman A, Karlsson J, Candefjord S (2022). Detecting driver fatigue using heart rate variability: a systematic review. <i>Accident Analysis &amp; Prevention</i> 178:106830. 18 studies; accuracy 44&ndash;100%. <a href="https://research.chalmers.se/en/publication/532387">research.chalmers.se</a></li>
+      <li><span class="vstat ok">Confirmed</span> Burlacu A, Brinza C, Brezulianu A, Covic A (2021). Accurate and early detection of sleepiness, fatigue and stress levels in drivers through HRV parameters: a systematic review. <i>Rev Cardiovasc Med</i> 22(3):845&ndash;852. 19 observational studies; sensitivity 47.1&ndash;95%; low quality. <a href="https://www.imrpress.com/journal/RCM/22/3/10.31083/j.rcm2203090">imrpress.com</a></li>
+      <li><span class="vstat part">Corrected</span> Zhang S, Niu X, Ma J, et al. (2025). Effects of sleep deprivation on heart rate variability: a systematic review and meta-analysis. <i>Front Neurol</i> 16:1556784. 11 trials, n=549; LF/HF SMD 1.47 (I&sup2;=91%); RMSSD &minus;0.24 (only 4 studies, borderline); LF also rose. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12394884/">pmc.ncbi.nlm.nih.gov</a></li>
+      <li><span class="vstat part">Corrected</span> Persson A, Jonasson H, Fredriksson I, Wiklund U, Ahlstr&ouml;m C (2021). Heart rate variability for classification of alert versus sleep deprived drivers in real road driving conditions. <i>IEEE T-ITS</i> 22(6):3316&ndash;3325. 86 drivers; ~85% two-class, 64% three-class, 44% subject-independent. (The 61% figure is from their EMBC 2019 paper.) <a href="https://ieeexplore.ieee.org/document/9055218">ieeexplore.ieee.org</a></li>
+      <li><span class="vstat ok">Confirmed</span> Lu K, Karlsson JG, Sj&ouml;rs Dahlman A, Sj&ouml;qvist B-A, Candefjord S (2022). Detecting driver sleepiness using consumer wearable devices in manual and partial automated real-road driving. <i>IEEE T-ITS</i> 23(5):4801&ndash;4810. 43 participants; AUC 0.76 with HRV only, 0.88 with driving time and day/night added. <a href="https://research.chalmers.se/en/publication/527879">research.chalmers.se</a></li>
+      <li><span class="vstat ok">Confirmed</span> Saeb S, Lonini L, Jayaraman A, Mohr DC, Kording KP (2017). The need to approximate the use-case in clinical machine learning. <i>GigaScience</i> 6(5):gix019. Record-wise CV overestimates accuracy (median error 5.6% vs 13.0% subject-wise across 62 studies). <a href="https://academic.oup.com/gigascience/article/6/5/gix019/3071704">academic.oup.com</a></li>
+      <li><span class="vstat part">Corrected</span> Little MA, Varoquaux G, Saeb S, et al. (2017). Using and understanding cross-validation strategies. Perspectives on Saeb et al. <i>GigaScience</i> 6(5):gix020. A joint debate, not a standalone rebuttal. <a href="https://academic.oup.com/gigascience/article/6/5/gix020/3071695">academic.oup.com</a></li>
+      <li><span class="vstat part">Corrected</span> FHWA (1998). PERCLOS: A valid psychophysiological measure of alertness as assessed by psychomotor vigilance. Tech Brief FHWA-MCRT-98-006 (Dinges &amp; Grace), summarising Dinges, Mallis, Maislin &amp; Powell, DOT HS 808 762. 14 subjects, 42 h awake; per-subject r averaged ~0.87 (derived, n=10). Not peer-reviewed. <a href="https://rosap.ntl.bts.gov/view/dot/113">rosap.ntl.bts.gov</a></li>
+      <li><span class="vstat part">Corrected</span> Van Dongen HPA, Baynard MD, Maislin G, Dinges DF (2004). Systematic interindividual differences in neurobehavioral impairment from sleep loss: evidence of trait-like differential vulnerability. <i>SLEEP</i> 27(3):423&ndash;433. n=21; ICC 0.68&ndash;0.92. <a href="https://www.med.upenn.edu/uep/assets/user-content/documents/Van_Dongen_Sleep_27_3_2004.pdf">med.upenn.edu</a></li>
+      <li><span class="vstat part">Corrected</span> Chinoy ED, Cuellar JA, Huwa KE, et al. (2021). Performance of seven consumer sleep-tracking devices compared with polysomnography. <i>SLEEP</i> 44(5):zsaa291. n=34; sleep sensitivity &ge;0.93, wake specificity 0.18&ndash;0.54. (The originally cited URL pointed to a different paper.) <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8120339">pmc.ncbi.nlm.nih.gov</a></li>
+      <li><span class="vstat ok">Confirmed</span> National Research Council (2003). <i>The Polygraph and Lie Detection</i>. National Academies Press. "Inherent ambiguity... only modest improvements in accuracy." <a href="https://www.nationalacademies.org/read/10420/chapter/2">nationalacademies.org</a></li>
+      <li><span class="vstat ok">Confirmed</span> CASA Human Factors / Pulsar Informatics (2010). Biomathematical fatigue modelling in civil aviation fatigue risk management, v1.0. Model predictions "cannot form the sole means" for decisions. <a href="https://ifalpa.org/media/2284/fatigue-modelling-report_casa-human-factors_v1-0_15-march-2010-2.pdf">ifalpa.org</a></li>
+      <li><span class="vstat part">Corrected</span> Regulation (EU) 2024/1689 (AI Act), Art. 5(1)(f), applicable 2 Feb 2025, and Commission Guidelines on prohibited AI practices (Feb 2025), paras 249, 256&ndash;263. Fatigue is not an emotion; general workplace stress monitoring is not permitted. <a href="https://ec.europa.eu/newsroom/dae/redirection/document/112367">ec.europa.eu</a></li>
+      <li><span class="vstat ok">Confirmed</span> Regulation (EU) 2019/2144 (General Safety Regulation), Annex II: Driver Drowsiness and Attention Warning for new types from 6 July 2022 and all new registrations from 7 July 2024. <a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32019R2144">eur-lex.europa.eu</a></li>
+      <li><span class="vstat ok">Confirmed</span> Kurinec CA, Stenson AR, Hinson JM, Whitney P, Van Dongen HPA (2022). Electrodermal activity is sensitive to sleep deprivation but does not moderate the effect of total sleep deprivation on affect. <i>Front Behav Neurosci</i> 16:885302. n=193. <a href="https://www.frontiersin.org/journals/behavioral-neuroscience/articles/10.3389/fnbeh.2022.885302/full">frontiersin.org</a></li>
+      <li><span class="vstat part">Corrected</span> Kr&auml;uchi K, Cajochen C, Werth E, Wirz-Justice A (1999). Warm feet promote the rapid onset of sleep. <i>Nature</i> 401:36&ndash;37. The "best predictor of sleep-onset latency" result is from the group's 2000 paper in <i>Am J Physiol</i> 278:R741&ndash;8. <a href="https://pubmed.ncbi.nlm.nih.gov/10485703/">pubmed.ncbi.nlm.nih.gov</a></li>
+      <li><span class="vstat ok">Confirmed</span> Doherty C, Baldwin M, Lambe R, Burke D, Altini M (2025). Readiness, recovery, and strain: an evaluation of composite health scores in consumer wearables. <i>Transl Exerc Biomed</i> 2(2):128&ndash;144. 14 scores from 10 manufacturers; no formulas disclosed, little validation (a documentation review). <a href="https://doi.org/10.1515/teb-2025-0001">doi.org</a></li>
+      <li><span class="vstat weak">Demoted</span> Fitzharris M, Liu S, Stephens AN, Lenn&eacute; MG (2017). The relative importance of real-time in-cab and external feedback in managing fatigue in real-world commercial transport operations. <i>Traffic Injury Prevention</i> 18(sup1):S71&ndash;S78. 66.2% vs 94.4% reductions; single company, vendor-monitored data, author linked to Seeing Machines. <a href="https://doi.org/10.1080/15389588.2017.1306855">doi.org</a></li>
+      <li><span class="vstat weak">Demoted</span> Aggregates Business, "Cat Driver Safety System is operator's fatigue-busting friend" (trade press). 97% covers fatigue and distraction combined; Cat's own page gives 80% for average fatigue events. <a href="https://www.cat.com/en_AU/products/new/technology/detect/detect/125060.html">cat.com</a></li>
+      <li><span class="vstat weak">Demoted</span> Optalert case study (vendor): 98% fall in fatigue alerts per operating hour at an unnamed mine with 200+ trucks; JDS caution/critical levels 4.5/5.0 from a commissioned simulator study. <a href="https://www.optalert.com/?p=10211">optalert.com</a></li>
+      <li><span class="vstat ok">Confirmed</span> Fatigue Science, "What is a ReadiScore and how does it work?" (vendor): rolling 10-day sleep history fed into the SAFTE model via ReadiWatch. <a href="https://fatiguescience.com/blog/what-is-a-readiscore-and-how-does-it-work">fatiguescience.com</a></li>
+      <li><span class="vstat part">Corrected</span> Bongers D, Fisher D (2016). Empowering miners to eliminate fatigue. QMIHSC 2016 (SmartCap authors, not peer-reviewed). Lists "you're tired, you're fired" and "Big Brother" as operator concerns, not as admitted outcomes. <a href="https://www.qmihsconference.org.au/wp-content/uploads/qmihsc-2016-writtenpaper-bongers_fisher.pdf">qmihsconference.org.au</a></li>
+      <li><span class="vstat ok">Confirmed</span> Seeing Machines (2025). FY2025 results (year to 30 June 2025): revenue US$62.3M (includes US$10.2M minimum-royalty revenue); adjusted EBITDA loss US$30.1M. <a href="https://seeingmachines.com/wp-content/uploads/2025/09/SEE-RNS-FY2025-Results-and-Directors-Report-Final-WITH-TABLES-25-09-25.pdf">seeingmachines.com</a></li>
+      <li><span class="vstat part">Corrected</span> Oura Series E (company announcement, 14 Oct 2025): &gt;$900M at ~$11B; 2024 revenue ~$500M is press-reported. The Fortune piece of 23 Sep 2025 reported $875M at ~$10.9B before close. <a href="https://fortune.com/2025/09/23/oura-ring-11-billion-valuation-series-e-finland-875-million-raise-unicorn/">fortune.com</a></li>
+      <li><span class="vstat ok">Confirmed</span> WHOOP (30 Aug 2021). $200M Series F led by SoftBank Vision Fund 2 at a $3.6B valuation. <a href="https://prnewswire.com/news-releases/whoop-raises-200-million-financing-led-by-softbank-vision-fund-2-at-3-6-billion-valuation-301365153.html">prnewswire.com</a></li>
+      <li><span class="vstat ok">Confirmed</span> Wenco (Hitachi Construction Machinery group) acquired the assets and IP of SmartCap Technologies, May 2021; &gt;5,000 users (via trade press). <a href="https://www.amsj.com.au/wenco-acquires-smartcap-to-enhance-safety-solution/">amsj.com.au</a></li>
+      <li><span class="vstat part">Corrected</span> National Safety Council / Brigham Health Fatigue Cost Calculator (Sept 2017): ~$1.4M per year per 1,000 employees; NSC 2018: $410B US societal cost (2015 estimate). The "$1,200&ndash;3,100 per employee" range was unverified and cut. <a href="https://prnewswire.com/news-releases/report-exhausted-employees-cost-american-companies-millions-of-dollars-annually-300524942.html">prnewswire.com</a></li>
+    </ul>
+  </div>
+
+  <div class="footer">Storm Research v2 &middot; 27/27 citations independently verified against primary sources, 17 Nov 2026 &middot; 0 fabricated, 12 corrected, 3 demoted &middot; Reliability = evidence quality, not author confidence</div>
+
+</div>
+</body>
+</html>

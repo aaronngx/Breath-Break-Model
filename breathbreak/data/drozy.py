@@ -49,6 +49,43 @@ def _load_kss(root: str, labels_csv: str | None) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _parse_ts(s: str):
+    from datetime import datetime
+    return datetime.strptime(s.strip(), "%Y-%m-%d_%H.%M.%S.%f")
+
+
+def load_drozy_pvt(root: str, labels_csv: str | None = None) -> pd.DataFrame:
+    """One row per PVT session: subject, session, start (datetime), kss, and
+    reaction times (ms) with each stimulus' offset from the test start (s).
+
+    pvt-rt/<subj>-<sess>.csv: header = test start; then 'stimulus;response' timestamps.
+    """
+    kss = _load_kss(root, labels_csv)
+    rows = []
+    for path in sorted(glob.glob(os.path.join(root, "pvt-rt", "*.csv"))):
+        m = re.match(r"(\d+)-(\d+)\.csv$", os.path.basename(path))
+        if not m:
+            continue
+        subj, sess = m.group(1), m.group(2)
+        k = kss[(kss.subject == subj) & (kss.session == sess)]
+        if k.empty or int(k.kss.iloc[0]) == 0:          # 0 = no recorded KSS
+            continue
+        with open(path) as f:
+            lines = [ln.strip() for ln in f if ln.strip()]
+        start = _parse_ts(lines[0])
+        stim_s, rt = [], []
+        for ln in lines[1:]:
+            a, b = ln.split(";")
+            ta, tb = _parse_ts(a), _parse_ts(b)
+            stim_s.append((ta - start).total_seconds())
+            rt.append((tb - ta).total_seconds() * 1000.0)
+        rows.append({"subject": f"drozy_{subj}", "session": sess, "start": start,
+                     "kss": int(k.kss.iloc[0]), "stim_s": np.array(stim_s), "rt_ms": np.array(rt)})
+    if not rows:
+        raise RuntimeError(f"No PVT files under {root}/pvt-rt")
+    return pd.DataFrame(rows)
+
+
 def load_drozy(root: str, cfg, labels_csv: str | None = None,
                edf_pattern: str = "psg/*.edf") -> list[Recording]:
     kss = _load_kss(root, labels_csv)
