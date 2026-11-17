@@ -1,8 +1,8 @@
-data/
-data_synth/
-cache/
-models/
-reports/
-weights/
-third_party/
+/data/
+/data_synth/
+/cache/
+/models/
+/reports/
+/weights/
+/third_party/
 __pycache__/
