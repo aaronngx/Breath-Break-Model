@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Storm Research: HackEdge Fatigue Data Gap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --blue: #2563eb; --blue-dark: #1e3a8a; --ink: #16203a; --muted: #5b6677; --line: #e4e9f2;
+    --bg-soft: #f6f8fc; --green: #15803d; --green-bg: #e9f6ee; --amber: #b45309; --amber-bg: #fdf3e7;
+    --slate: #475569; --slate-bg: #eef1f6; --red: #b91c1c; --red-bg: #fdecec;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Roboto', system-ui, sans-serif; color: var(--ink); background: #eef1f6; line-height: 1.62; font-weight: 400; -webkit-font-smoothing: antialiased; }
+  .page { max-width: 900px; margin: 0 auto; background: #fff; padding: 64px 72px 80px; box-shadow: 0 1px 40px rgba(22,32,58,0.08); }
+  .eyebrow { font-family: 'Roboto Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--blue); margin-bottom: 14px; }
+  h1 { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 40px; line-height: 1.12; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 18px; }
+  .lede { font-size: 17px; color: var(--muted); max-width: 640px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 26px; padding-top: 22px; border-top: 2px solid var(--line); font-family: 'Roboto Mono', monospace; font-size: 12px; color: var(--muted); }
+  .meta-row b { color: var(--ink); font-weight: 600; }
+  .verify-banner { margin-top: 22px; background: var(--green-bg); border: 1px solid #bfe3cc; border-radius: 8px; padding: 13px 18px; font-size: 13px; color: #14532d; display: flex; gap: 10px; align-items: baseline; }
+  .verify-banner b { font-weight: 700; }
+  .verify-banner .tag { font-family: 'Roboto Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; background: var(--green); color: #fff; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; }
+  .howto { margin-top: 18px; border: 1px solid var(--line); border-radius: 8px; padding: 18px 22px; background: var(--bg-soft); }
+  .howto h4 { font-family: 'Roboto Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .howto ul { list-style: none; }
+  .howto li { font-size: 13.5px; color: #2b3950; margin-bottom: 7px; padding-left: 16px; position: relative; }
+  .howto li::before { content: "›"; position: absolute; left: 0; color: var(--blue); font-weight: 700; }
+  .section { margin-top: 56px; }
+  .section-num { font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 600; color: var(--blue); letter-spacing: 0.05em; }
+  h2 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 25px; letter-spacing: -0.01em; color: var(--ink); margin: 6px 0 18px; line-height: 1.2; }
+  h2 .bar { display: inline-block; width: 38px; height: 4px; background: var(--blue); border-radius: 2px; vertical-align: middle; margin-right: 14px; }
+  p { margin-bottom: 14px; }
+  p.body-lg { font-size: 16.5px; }
+  .ceo { background: var(--bg-soft); border-left: 5px solid var(--blue); padding: 26px 30px; border-radius: 4px; font-size: 16.5px; }
+  .ceo strong { font-weight: 700; color: var(--blue-dark); }
+  .finding { border: 1px solid var(--line); border-radius: 10px; padding: 24px 26px; margin-bottom: 18px; position: relative; }
+  .finding-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 12px; }
+  .finding-title { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 18px; line-height: 1.3; color: var(--ink); flex: 1; }
+  .finding-rank { font-family: 'Roboto Mono', monospace; font-weight: 600; font-size: 13px; color: #fff; background: var(--ink); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .finding p { font-size: 15px; color: #283449; margin-bottom: 14px; }
+  .rel-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .rel { display: inline-flex; align-items: center; gap: 9px; font-family: 'Roboto Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 12px; border-radius: 20px; }
+  .rel.high { background: #e7f0fe; color: var(--blue); }
+  .rel.medhigh { background: var(--green-bg); color: var(--green); }
+  .rel.medium { background: var(--amber-bg); color: var(--amber); }
+  .rel.low { background: var(--red-bg); color: var(--red); }
+  .score { font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 600; color: var(--ink); }
+  .score b { font-size: 17px; }
+  .score span { color: var(--muted); font-weight: 400; }
+  .chips { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+  .chip-row { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; font-size: 13.5px; }
+  .chip-label { font-family: 'Roboto Mono', monospace; font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
+  .chip-label.sup { background: var(--green-bg); color: var(--green); }
+  .chip-label.chal { background: var(--red-bg); color: var(--red); }
+  .chip-label.fix { background: var(--amber-bg); color: var(--amber); }
+  .chip-row span.who { color: #2b3950; }
+  .chip-row span.who b { font-weight: 600; }
+  .contested { border: 1px dashed var(--amber); background: #fffaf2; border-radius: 10px; padding: 22px 26px; margin-bottom: 18px; }
+  .contested .tag { font-family: 'Roboto Mono', monospace; font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber); }
+  .contested h4 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 16px; color: var(--ink); margin: 6px 0 10px; }
+  .contested p { font-size: 14px; color: #4a3a22; margin-bottom: 0; }
+  .connection { background: linear-gradient(135deg, #16203a 0%, #1e3a8a 100%); color: #eaf0fb; border-radius: 12px; padding: 34px 38px; }
+  .connection h2 { color: #fff; }
+  .connection h2 .bar { background: #6ea8ff; }
+  .connection .section-num { color: #9ec1ff; }
+  .connection p { color: #d3def3; font-size: 16px; }
+  .connection .punch { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 18px; color: #fff; line-height: 1.4; margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.18); }
+  .assume { border: 1px solid var(--line); border-left: 5px solid var(--amber); border-radius: 6px; padding: 24px 28px; background: #fffdf9; }
+  .assume h3 { font-family: 'Montserrat', sans-serif; font-size: 17px; font-weight: 700; color: var(--ink); margin-bottom: 10px; }
+  .assume p { font-size: 15px; color: #3a3320; }
+  .assume p:last-child { margin-bottom: 0; }
+  .action-item { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+  .action-item:last-child { border-bottom: none; }
+  .action-mark { font-family: 'Roboto Mono', monospace; font-weight: 600; font-size: 13px; color: var(--blue); flex-shrink: 0; width: 34px; }
+  .action-item .do { font-weight: 600; color: var(--ink); }
+  .action-item p { font-size: 14.5px; margin-bottom: 0; color: #2b3950; }
+  .frontier { border: 2px dashed var(--blue); border-radius: 12px; padding: 30px 34px; background: var(--bg-soft); }
+  .frontier .q { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 22px; line-height: 1.32; color: var(--blue-dark); margin-bottom: 16px; }
+  .frontier p { font-size: 15px; color: #2b3950; }
+  .oncam { margin-top: 18px; }
+  .oncam-col { border-radius: 10px; padding: 20px 24px; margin-bottom: 14px; }
+  .oncam-col.safe { background: var(--green-bg); border: 1px solid #bfe3cc; }
+  .oncam-col.caveat { background: var(--amber-bg); border: 1px solid #f0d9b5; }
+  .oncam-col.avoid { background: var(--red-bg); border: 1px solid #f3c9c9; }
+  .oncam-col h4 { font-family: 'Roboto Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
+  .oncam-col.safe h4 { color: var(--green); }
+  .oncam-col.caveat h4 { color: var(--amber); }
+  .oncam-col.avoid h4 { color: var(--red); }
+  .oncam-col ul { list-style: none; }
+  .oncam-col li { font-size: 14px; color: #233; margin-bottom: 8px; padding-left: 16px; position: relative; line-height: 1.5; }
+  .oncam-col li::before { content: "•"; position: absolute; left: 0; font-weight: 700; }
+  .oncam-col.safe li::before { color: var(--green); }
+  .oncam-col.caveat li::before { color: var(--amber); }
+  .oncam-col.avoid li::before { color: var(--red); }
+  .refs { margin-top: 56px; padding-top: 26px; border-top: 2px solid var(--line); }
+  .refs h3 { font-family: 'Roboto Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .refs ul { list-style: none; }
+  .refs li { font-size: 12.5px; color: var(--muted); margin-bottom: 11px; padding-left: 16px; position: relative; line-height: 1.5; }
+  .refs li::before { content: "›"; position: absolute; left: 0; color: var(--blue); font-weight: 700; }
+  .refs a { color: #34507e; text-decoration: none; }
+  .refs a:hover { text-decoration: underline; }
+  .refs .vstat { font-family: 'Roboto Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; margin-right: 6px; }
+  .vstat.ok { background: var(--green-bg); color: var(--green); }
+  .vstat.part { background: var(--amber-bg); color: var(--amber); }
+  .vstat.weak { background: var(--red-bg); color: var(--red); }
+  .footer { margin-top: 40px; font-family: 'Roboto Mono', monospace; font-size: 11px; color: #9aa6b8; text-align: center; }
+  @media (max-width: 640px) { .page { padding: 40px 24px 56px; } h1 { font-size: 30px; } }
+  @media print { body { background: #fff; } .page { box-shadow: none; max-width: 100%; padding: 0; } .connection, .oncam-col { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="eyebrow">Storm Research &middot; v2 (verified)</div>
+    <h1>Why the HackEdge recordings can't give a fatigue score, and what to record instead</h1>
+    <p class="lede">A five-lens synthesis: practitioner, academic, skeptic, economist, and historian. Every claim checked against its primary source before publication. Topic: the team's AFE4950 ECG/PPG files are ~30-s clips, mostly one person, with no wake time, sleep hours, reaction test or sleepiness rating.</p>
+    <div class="meta-row">
+      <span><b>Date</b> &nbsp;2026-11-18</span>
+      <span><b>Method</b> &nbsp;5 author-built expert lenses + contradiction map</span>
+      <span><b>Audience</b> &nbsp;Student team building the Breath-Break AFE4950 fatigue wearable</span>
+    </div>
+    <div class="verify-banner">
+      <span class="tag">Verified</span>
+      <span>22 citations: 21 checked against primary sources on 2026-11-18, 1 practitioner blog not checked and marked as such. <b>Result: 0 fabricated, 10 corrected, 3 demoted.</b> Two URLs pointed to the wrong document and two figures were attributed to the wrong paper; all are fixed below. Confidence scores reflect post-verification evidence quality.</span>
+    </div>
+    <div class="howto">
+      <h4>How to read this</h4>
+      <ul>
+        <li><b>The panel was author-constructed.</b> All five lenses share one framing, so where they agree, treat it as a strong hypothesis, not independent proof.</li>
+        <li><b>Confidence is scored 1-10</b> on evidence quality: peer-reviewed causal work &gt; official policy/financial data &gt; single commissioned survey &gt; analogy &gt; preprint.</li>
+        <li><b>Measured fact and interpretation are flagged separately.</b> A high score means the data is solid, not that the strategic reading is certain.</li>
+        <li><b>Project numbers</b> (DROZY AUC 0.89, HRV-only 0.64, HackEdge quality results) come from this repo's own runs, not from the cited literature.</li>
+      </ul>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="section-num">01</div>
+    <h2><span class="bar"></span>The 60-Second Summary</h2>
+    <div class="ceo">
+      <p style="margin-bottom:0;">Settled: a fatigue score needs a yardstick, and the HackEdge files have none. There is no reaction test, no sleepiness rating and no schedule, so nothing can confirm or deny a score computed from them. Heart-signal-only fatigue models also collapse on new people: 85% on mixed data falls to 44% when tested on unseen drivers (Persson 2021), and this repo's own HRV-only model scores AUC 0.64. <b>The existing clips are only useful to show that the hardware and the signal-quality gate work. The fix is to collect new, labelled sessions, not to build a better model.</b> A credible minimum: about 10 people, at least 2 sessions each (rested vs short sleep or late in the day), and at every session a check-in, a 1-9 sleepiness rating, a 3-min reaction test, and 1-5 min of seated ECG. Report results only on held-out people. Contested: the skeptic argues that with ~10 people the ECG will add nothing measurable over schedule + reaction test, so the demo would really prove the sleep model, not the wearable. That is an open empirical question; one ablation answers it.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-num">02</div>
+    <h2><span class="bar"></span>Five Key Findings, Ranked by Reliability</h2>
+
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">Unlabelled clips cannot be turned into a fatigue score, at any level of modelling skill</div>
+        <div class="finding-rank">1</div>
+      </div>
+      <div class="rel-row">
+        <div class="rel high">Reliability: High</div>
+        <div class="score"><b>9</b><span>/10</span></div>
+      </div>
+      <p>Every fatigue signal that lasted was first checked against an outside criterion. PERCLOS (eyelid closure) was endorsed by FHWA in 1998 only after it was validated against reaction-test lapses. With no criterion recorded, a model trained on 10 clips from mostly one person learns who was recorded and when, not how tired they were. Saeb et al. found that mixing one person's recordings across training and test sets "massively" inflates accuracy, and 28 of 62 reviewed studies (about 45%) did exactly that. The HackEdge "fatigue" files are also labelled as sickness, not sleepiness, so even the condition labels measure a different thing.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>All five lenses.</b> Saeb 2017 (GigaScience); FHWA PERCLOS tech brief 1998; project quality report (PPG flat in 8/10, ECG rejected in 1/10)</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who">No one</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who">The PERCLOS source at rosap dot/113 is the FHWA tech brief (FHWA-MCRT-98-006), not the Dinges et al. NHTSA report DOT HS 808 762. Both are listed separately below.</span></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">Heart-signal-only fatigue models collapse on people they haven't seen</div>
+        <div class="finding-rank">2</div>
+      </div>
+      <div class="rel-row">
+        <div class="rel medhigh">Reliability: Medium-high</div>
+        <div class="score"><b>8</b><span>/10</span></div>
+      </div>
+      <p>Persson et al. (IEEE T-ITS 2021) tested 86 drivers on real roads, alert vs sleep-deprived. HRV classification reached 85% on mixed data but 44% when each driver was held out. A separate 2026 conference paper reports an LSTM dropping from 87.8% (10-fold) to 61% (leave-one-subject-out). This repo's own DROZY test agrees: HRV-only scored AUC 0.64, against 0.89 for schedule + 3-min reaction test. The counterpoint is Matuz et al. (Sci Rep 2022), who did split by participant and reached AUC 0.84. But that was task-induced mental fatigue on 5-min windows, not sleepiness from short clips.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Practitioner, Skeptic, Academic.</b> Persson 2021; Styanidis 2026 (conference); project DROZY results</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who">Matuz 2022: a subject-wise split with AUC 0.843, for mental fatigue on 5-min windows</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who"><b>The 87.8%&rarr;61% LSTM figure is not from Persson; it is from Styanidis et al. 2026 (conference, no DOI).</b> The abstract doesn't say whether Persson's 44% is 2-class or 3-class, so don't call it "below chance". <b>The skeptic's claim that Matuz didn't test on held-out people is false:</b> participants were split ~70/30, repeated 100 times.</span></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">A 3-min reaction test (PVT-B) is a usable fatigue yardstick, but it was validated with a 355 ms lapse threshold, not 500 ms</div>
+        <div class="finding-rank">3</div>
+      </div>
+      <div class="rel-row">
+        <div class="rel medhigh">Reliability: Medium-high</div>
+        <div class="score"><b>7</b><span>/10</span></div>
+      </div>
+      <p>Basner, Mollicone &amp; Dinges (2011) tested the 3-min PVT-B in 74 people: 33 h awake (N=31) and 5 nights of 4 h in bed (N=43). Cutting test time by 70% lost on average 22.7% of the 10-min test's effect size (range 6.9-67.8%). Lowering the lapse threshold from 500 to 355 ms raised effect sizes from 1.38 to 1.49 (total deprivation) and from 0.65 to 0.76 (partial). <b>This repo's PVT counts lapses at 500 ms.</b> The score is capped at 7 because this is one lab's validation, the 355 ms threshold was found after the fact, and the authors say it "may depend on PVT hardware". A laptop or SK-AM62 keyboard adds its own delay.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Academic, Practitioner, Historian.</b> Basner 2011 (Acta Astronautica); Dinges &amp; Powell 1985 (original PVT)</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who"><b>Skeptic:</b> the shorter test loses sensitivity, up to 67.8% of effect size in the worst metric</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who"><b>The venue is Acta Astronautica 69:949-959, not Sleep.</b> Basner did not test the 2-min and 90-s versions; the "too insensitive" judgement is cited from Loh 2004 and Roach 2006.</span></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">30-s clips give a fair RMSSD at rest, and nothing else; record at least 60 s, ideally 2-5 min</div>
+        <div class="finding-rank">4</div>
+      </div>
+      <div class="rel-row">
+        <div class="rel medhigh">Reliability: Medium-high</div>
+        <div class="score"><b>7</b><span>/10</span></div>
+      </div>
+      <p>In Munoz et al. (PLOS ONE 2015, n=3,387), RMSSD from 30 s correlated r=0.932 with a 4-5 min reference, and r=0.986 at 120 s. SDNN was much weaker (30 s: r=0.859). Esco &amp; Flatt (2014, 23 athletes, ECG) found lnRMSSD agreement of ICC 0.98 at 60 s, falling to 0.81 at 10 s, and recommend at least 60 s after 5 min of settling. Shaffer et al. (2020) warn that 17 of 28 ultra-short studies never tested criterion validity: a short RMSSD agreeing with a long one doesn't show that either predicts fatigue. The score is capped because Munoz's beat intervals came from a finger-cuff blood-pressure signal, not ECG, and its short segments overlap the reference, which inflates agreement.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Academic, Practitioner, Skeptic.</b> Munoz 2015; Esco &amp; Flatt 2014; Shaffer 2020</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who">The lenses disagree on the minimum: Munoz finds 10-30 s acceptable for RMSSD, while Esco &amp; Flatt and Shaffer 2019 want 60 s</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who">The 10-s r of about 0.85 is RMSSD only. Munoz recordings were finger-cuff, supine, log-transformed. Shaffer's phrase is "proxies of proxies".</span></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">Fatigue vulnerability is a stable personal trait, so the design must be within-person</div>
+        <div class="finding-rank">5</div>
+      </div>
+      <div class="rel-row">
+        <div class="rel medium">Reliability: Medium</div>
+        <div class="score"><b>6</b><span>/10</span></div>
+      </div>
+      <p>Van Dongen et al. (2004, N=21) found that how much sleep loss impairs someone is highly repeatable within that person: ICCs of 67.5-92.2% across tests (PVT 0.675, KSS about 0.87-0.90). Sleepiness ratings track reaction-test lapses well within a person: r=0.75 in Manousakis 2021 (N=18, 40 h awake), and a mean r=0.56 in Kaida 2006 (16 women). Between-person agreement is described as "more modest". So each person needs their own rested baseline and repeated sessions. Pooling one session each from many people blurs the signal. The score is capped by small, homogeneous samples, and the between-person figure couldn't be checked behind a paywall.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Academic, Practitioner, Skeptic.</b> Van Dongen 2004; Manousakis 2021; Kaida 2006; Altini (HRV4Training, practitioner)</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who">No one directly; the evidence is small-sample</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who"><b>"58% of variance is trait" was misattributed.</b> 0.58 is the ICC from an earlier 10-person study cited in the introduction; this study reports 67.5-92.2%. The Manousakis URL pointed to a different paper (Hao 2021). The between-person r is unverified.</span></div>
+      </div>
+    </div>
+
+    <div class="contested">
+      <div class="tag">Contested signal &middot; monitor, do not assert &middot; confidence 4/10</div>
+      <h4>"Consumer readiness scores are profitable because nobody validates them"</h4>
+      <p>The financial facts are solid. Whoop raised $575M at $10.1B in March 2026, with a $1.1B <b>bookings</b> run rate (not revenue). Oura reported $907.9M revenue for the fiscal year ending Sep 30 2025. The FDA sent Whoop a warning letter on 14 July 2025 over Blood Pressure Insights. Doherty et al. (2025) found that few of 14 composite scores from 10 makers disclose formulas or validation. The step from there to "the business model depends on staying unvalidated" is the economist lens's interpretation, not a measured fact. Fatigue-risk-management market sizes ($0.29B-$3B depending on the analyst) are paid estimates. Don't use either claim in a pitch.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="connection">
+      <div class="section-num">03</div>
+      <h2><span class="bar"></span>The Hidden Connection</h2>
+      <p>The skeptic says the demo will validate the sleep model, not the wearable. The historian says the team already has the winning design. Both sound like conflicting verdicts on the ECG.</p>
+      <p>They are the same observation. In every cycle the asset that lasted was the yardstick: the PVT, then PERCLOS once it was checked against the PVT, and then hours-of-service logs, which regulators made tamper-proof in 2017 rather than measuring physiology. The EU's mandatory car drowsiness warning goes further: it is validated against KSS &ge; 8 with at least 10 people, and it must work <i>without biometric information</i>. The regulated path to "fatigue detection" doesn't need an ECG at all. What it needs is a labelled, repeatable protocol, and that is exactly what the HackEdge data lacks.</p>
+      <p class="punch">The team's product is the 5-minute labelling protocol (check-in + sleepiness rating + 3-min reaction test). The ECG has to earn its place by beating that protocol on held-out people, and nobody has tested whether it can.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="assume">
+      <h3>The assumption this briefing rests on (and the missing 6th lens)</h3>
+      <p>All five lenses assumed that a new data collection can simply be run: that students can be recorded after short sleep, and that a keyboard reaction test measures reaction time accurately. The missing lenses are <b>participant safety and ethics</b> (any deliberate sleep restriction needs a supervisor or ethics sign-off, informed consent, and no driving afterwards) and <b>measurement engineering</b> (the input delay of the PVT on the device). The 355 ms threshold is hardware-dependent, and a 30-80 ms keyboard or display delay would move many presses across it.</p>
+      <p>The omission that could reverse the plan: if the device's reaction-time delay is large or variable, the 3-min test, which is the most reliable part of the current model, becomes the noisiest one. Measure the delay before collecting data, and use natural variation (morning vs late evening, after a naturally short night) instead of imposed sleep loss.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-num">04</div>
+    <h2><span class="bar"></span>What To Actually Do Differently</h2>
+    <p class="body-lg" style="color:var(--muted);">For the Breath-Break team: concrete moves for the next recording round and the demo.</p>
+    <div class="action-item">
+      <div class="action-mark">01</div>
+      <div><span class="do">Stop trying to score the 10 HackEdge files; present them as the sensor-quality demo.</span><p>They show the gate working: PPG flat in 8 of 10 files, one ECG rejected for beat shape (see reports/sensor_errors.png). That is a real result. A fatigue result from them is not possible (Finding 1).</p></div>
+    </div>
+    <div class="action-item">
+      <div class="action-mark">02</div>
+      <div><span class="do">Record about 10 people, at least 2 sessions each, with all four inputs at every session.</span><p>Rested morning vs late evening or after a short night. At each session record: wake time, hours slept, clock time; a 1-9 sleepiness rating; the 3-min test (<code>python -m breathbreak.pvt --minutes 3 --out ...</code>); and 2-5 min of seated, still ECG. Fill in the <code>wake</code>, <code>slept</code>, <code>recorded_at</code>, <code>pvt_json</code> and <code>kss</code> manifest columns. Ten people mirrors the EU drowsiness-warning validation minimum (Findings 3-5).</p></div>
+    </div>
+    <div class="action-item">
+      <div class="action-mark">03</div>
+      <div><span class="do">Block saving until a 10-second live signal check passes.</span><p>Run the quality gate on the first 10 s, and refuse to start if the PPG is flat or the ECG beats don't match. The flat PPG in 8 of 10 files was a collection failure; check that the TIA/LED channel is on and the finger is fully on the sensor.</p></div>
+    </div>
+    <div class="action-item">
+      <div class="action-mark">04</div>
+      <div><span class="do">Measure the PVT's input delay, then score lapses at both 500 ms and 355 ms.</span><p>Time the key press against a known stimulus (for example a phone slow-motion video of the screen and the key) to get the device delay, and subtract it. Report both thresholds, since PVT-B was validated at 355 ms (Finding 3). This is a code change to <code>breathbreak/pvt.py</code>; don't make it until the delay is known.</p></div>
+    </div>
+    <div class="action-item">
+      <div class="action-mark">05</div>
+      <div><span class="do">Report only held-out-person results, with an ablation that drops the ECG.</span><p>Compare schedule + PVT vs schedule + PVT + ECG, scored leave-one-person-out (Finding 2; Saeb 2017). If the ECG doesn't help, say so. It stays as the quality-gated retest trigger.</p></div>
+    </div>
+    <div class="action-item">
+      <div class="action-mark">06</div>
+      <div><span class="do">Pitch it as "a 5-minute fatigue check with a validated reaction test", not "our wearable measures fatigue".</span><p>Say that the ECG checks its own signal quality and can only ask for a retest. That claim is true today, and it also keeps you clear of stress-inference concerns (Hidden Connection).</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-num">04b</div>
+    <h2><span class="bar"></span>What's Safe to Assert</h2>
+    <div class="oncam">
+      <div class="oncam-col safe">
+        <h4>✓ Safe — verified against primary source</h4>
+        <ul>
+          <li>HRV driver-sleepiness classification fell from 85% to 44% when drivers were held out (Persson et al., IEEE T-ITS 2021, 86 drivers).</li>
+          <li>Mixing one person's recordings across train and test inflates accuracy; 28 of 62 reviewed studies did it (Saeb et al., GigaScience 2017).</li>
+          <li>A 3-min PVT-B kept most of the 10-min test's sensitivity to sleep loss in 74 people (Basner et al., Acta Astronautica 2011).</li>
+          <li>RMSSD from 60 s agrees with 5 min at ICC 0.98 at rest (Esco &amp; Flatt 2014).</li>
+          <li>The EU drowsiness-warning rule (2021/1341) validates against KSS &ge; 8 with at least 10 human participants and must work without biometric information.</li>
+          <li>Epic's sepsis model scored AUC 0.63 externally vs 0.76-0.83 claimed, missing 67% of cases (Wong et al., JAMA IM 2021): a warning about loose labels.</li>
+        </ul>
+      </div>
+      <div class="oncam-col caveat">
+        <h4>⚠ Say with a caveat</h4>
+        <ul>
+          <li>Use a 355 ms lapse threshold for the 3-min test (found after the fact, from one lab, hardware-dependent).</li>
+          <li>30-s RMSSD correlates r=0.93 with 5 min (finger-cuff signal, supine, overlapping segments).</li>
+          <li>Fatigue vulnerability is trait-like, ICC 0.68-0.92 (N=21 healthy young adults).</li>
+          <li>Sleepiness ratings track PVT lapses r=0.75 within a person (N=18; the between-person figure is unverified).</li>
+          <li>HRV mental-fatigue models can generalise, AUC 0.84 (Matuz 2022: task fatigue and 5-min windows, not sleepiness).</li>
+          <li>Whoop's "$1.1B" is a bookings run rate, not revenue.</li>
+        </ul>
+      </div>
+      <div class="oncam-col avoid">
+        <h4>✕ Don't assert</h4>
+        <ul>
+          <li>Any fatigue accuracy computed from the 10 HackEdge files.</li>
+          <li>"Our wearable/ECG detects fatigue" (no held-out evidence yet; it is the open question).</li>
+          <li>"58% of fatigue vulnerability is genetic/trait" (misattributed figure).</li>
+          <li>"LSTM HRV models drop from 87.8% to 61%" as a Persson result (it is a 2026 conference paper with no DOI).</li>
+          <li>Fatigue-risk-management market size as a single number (analyst estimates range from $0.29B to $3B).</li>
+          <li>"Wellness companies avoid validation on purpose" (an interpretation, not a finding).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-num">05</div>
+    <h2><span class="bar"></span>The Frontier Question</h2>
+    <div class="frontier">
+      <div class="q">On people the model has never seen, does a within-person change in ECG add anything to schedule + 3-min reaction test, or does it only repeat what the check-in already knows?</div>
+      <p>It decides what the product is. If the ECG adds measurable value, the wearable is the fatigue sensor and the reaction test is its calibration. If it doesn't, the product is a 5-minute fatigue check and the wearable is an optional retest trigger. No lens could answer it, because no published data set combines a wearable ECG, a schedule, a PVT and KSS on held-out people at this scale. The team's next 10-person collection, scored leave-one-person-out with and without the ECG, answers it directly.</p>
+    </div>
+  </section>
+
+  <div class="refs">
+    <h3>Evidence base &middot; verification status</h3>
+    <ul>
+      <li><span class="vstat part">Corrected</span> Basner M, Mollicone D, Dinges DF (2011). Validity and sensitivity of a brief psychomotor vigilance test (PVT-B) to total and partial sleep deprivation. <i>Acta Astronautica</i> 69:949-959. N=74; 22.7% average effect-size loss; 355 ms threshold found after the fact; hardware-dependent. Venue corrected from "Sleep". <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3197786/">pmc.ncbi.nlm.nih.gov</a></li>
+      <li><span class="vstat ok">Confirmed</span> Dinges DF, Powell JW (1985). Microcomputer analyses of performance on a portable, simple visual RT task during sustained operations. <i>Behav Res Methods Instrum Comput</i> 17(6):652-655. The original PVT; DOI not checked. <a href="https://www.med.upenn.edu/uep/pvt.html">med.upenn.edu</a></li>
+      <li><span class="vstat part">Corrected</span> Munoz ML et al. (2015). Validity of (ultra-)short recordings for heart rate variability measurements. <i>PLoS ONE</i> 10(9):e0138921. n=3,387; RMSSD 30 s r=0.932, 120 s r=0.986. Beat intervals from a finger-cuff blood-pressure signal, not ECG; segments overlap the reference. <a href="https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0138921">journals.plos.org</a></li>
+      <li><span class="vstat ok">Confirmed</span> Esco MR, Flatt AA (2014). Ultra-short-term heart rate variability indexes at rest and post-exercise in athletes. <i>J Sports Sci Med</i> 13(3):535-541. n=23; lnRMSSD ICC 0.98 at 60 s, 0.81 at 10 s; recommends &ge;60 s. <a href="https://jssm.org/jssm-13-535.xml-Fulltext">jssm.org</a></li>
+      <li><span class="vstat ok">Confirmed</span> Shaffer F, Meehan ZM, Zerr CL (2020). A critical review of ultra-short-term heart rate variability norms research. <i>Front Neurosci</i> 14:594880. 17 of 28 studies did not test criterion validity; "proxies of proxies". <a href="https://www.frontiersin.org/journals/neuroscience/articles/10.3389/fnins.2020.594880">frontiersin.org</a></li>
+      <li><span class="vstat part">Corrected</span> Persson A, Jonasson H, Fredriksson I, Wiklund U, Ahlström C (2021). Heart rate variability for classification of alert versus sleep deprived drivers in real road driving conditions. <i>IEEE T-ITS</i> 22(6):3316-3325. 86 drivers; 85% (2-class) on mixed data, 44% leave-one-participant-out (number of classes not stated in the abstract). The LSTM figure is not from this paper. <a href="https://ieeexplore.ieee.org/document/9055218/">ieeexplore.ieee.org</a></li>
+      <li><span class="vstat weak">Demoted</span> Styanidis A, Lourenço A, Carreiras C, Ahlström C, Ziakopoulos A, Yannis G (2026). Temporal modeling of HRV for driver drowsiness detection with LSTM networks. 8th IRTAD Conference. 20 drivers; 87.8% 10-fold vs 61.0% leave-one-subject-out. Conference paper, no DOI, seen only on the authors' page. <a href="https://www.nrso.ntua.gr/geyannis/?p=26284">nrso.ntua.gr</a></li>
+      <li><span class="vstat ok">Confirmed</span> Saeb S, Lonini L, Jayaraman A, Mohr DC, Kording KP (2017). The need to approximate the use-case in clinical machine learning. <i>GigaScience</i> 6(5):1-9. 28 of 62 papers (about 45%) used record-wise CV. <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5441397/">ncbi.nlm.nih.gov</a></li>
+      <li><span class="vstat part">Corrected</span> Matuz A, van der Linden D, Darnai G, Csathó Á (2022). Generalisable machine learning models trained on heart rate variability data to predict mental fatigue. <i>Sci Rep</i> 12:20023. 82 students; split by participant (70/30, ×100); AUC 0.843. The lens claim "not tested on held-out people" was false. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC9681752/">pmc.ncbi.nlm.nih.gov</a></li>
+      <li><span class="vstat ok">Confirmed</span> Kaida K et al. (2006). Validation of the Karolinska sleepiness scale against performance and EEG variables. <i>Clin Neurophysiol</i> 117(7):1574-81. 16 women aged 33-43; mean r=0.56 between KSS and lapses. <a href="https://europepmc.org/abstract/MED/16679057">europepmc.org</a></li>
+      <li><span class="vstat part">Corrected</span> Manousakis JE, Mann N, Jeppe KJ, Anderson C (2021). <i>Psychophysiology</i> 58(8):e13839. N=18, 40 h awake; within-person KSS vs lapses r=0.75; between-person "more modest" (number unverified, paywalled). The original URL pointed to a different paper. <a href="https://doi.org/10.1111/psyp.13839">doi.org</a></li>
+      <li><span class="vstat part">Corrected</span> Van Dongen HPA, Baynard MD, Maislin G, Dinges DF (2004). Systematic interindividual differences in neurobehavioral impairment from sleep loss. <i>Sleep</i> 27(3):423-33. N=21; ICC 67.5-92.2%. The "58%" figure belongs to an earlier study. <a href="https://www.med.upenn.edu/uep/assets/user-content/documents/Van_Dongen_Sleep_27_3_2004.pdf">med.upenn.edu</a></li>
+      <li><span class="vstat part">Corrected</span> Commission Delegated Regulation (EU) 2021/1341 (DDAW). Warning required at KSS &ge; 8; validated with &ge;10 human participants; primary input is vehicle-system analysis; must work without biometric information. The 2024 all-new-vehicles phase-in (Reg. 2019/2144 Annex II) was not fetched. <a href="https://eur-lex.europa.eu/eli/reg_del/2021/1341/oj/eng">eur-lex.europa.eu</a></li>
+      <li><span class="vstat part">Corrected</span> FHWA (1998). PERCLOS: A valid psychophysiological measure of alertness as assessed by psychomotor vigilance. Tech brief FHWA-MCRT-98-006; credits Wierwille 1994. Separate from Dinges, Mallis, Maislin &amp; Powell, NHTSA DOT HS 808 762 (1998). <a href="https://rosap.ntl.bts.gov/view/dot/113">rosap.ntl.bts.gov</a></li>
+      <li><span class="vstat ok">Confirmed</span> Wong A et al. (2021). External validation of a widely implemented proprietary sepsis prediction model in hospitalized patients. <i>JAMA Intern Med</i> 181(8):1065-1070. AUC 0.63 vs 0.76-0.83 claimed; missed 67%. <a href="https://jamanetwork.com/journals/jamainternalmedicine/fullarticle/2781307">jamanetwork.com</a></li>
+      <li><span class="vstat ok">Confirmed</span> FMCSA (2015). Electronic Logging Devices and Hours of Service Supporting Documents, 80 FR 78292; compliance 18 Dec 2017. First hours-of-service rules issued by the ICC in 1938 (via National Academies, NAP 21921). <a href="https://www.govinfo.gov/content/pkg/FR-2015-12-16/html/2015-31336.htm">govinfo.gov</a></li>
+      <li><span class="vstat part">Corrected</span> WHOOP press release (31 Mar 2026): $575M Series G at $10.1B; 2.5M+ members; $1.1B <b>bookings</b> run rate (not revenue). <a href="https://www.mubadala.com/en/news/whoop-raises-dollar-575-million-at-dollar-10-billion-valuation-to-advance-global-health-platform">mubadala.com</a></li>
+      <li><span class="vstat part">Corrected</span> Oura Health S-1/A (SEC, 21 Sep 2026): revenue $907.9M for the fiscal year ending 30 Sep 2025, vs $406.8M. The Series E of about $11B (Oct 2025) is from press coverage only. <a href="https://www.sec.gov/Archives/edgar/data/2133022/000119312526396051/d119865ds1a.htm">sec.gov</a></li>
+      <li><span class="vstat ok">Confirmed</span> FDA warning letter to WHOOP, Inc., CMS #709755, 14 Jul 2025 (Blood Pressure Insights). <a href="https://www.fda.gov/inspections-compliance-enforcement-and-criminal-investigations/warning-letters/whoop-inc-709755-07142025">fda.gov</a></li>
+      <li><span class="vstat ok">Confirmed</span> Doherty C, Baldwin M, Lambe R, Burke D, Altini M (2025). Composite readiness/recovery scores review. <i>Transl Exerc Biomed</i> 2(2):128-144. 14 scores from 10 makers; few disclose formulas or validation (abstract-level check). <a href="https://doi.org/10.1515/teb-2025-0001">doi.org</a></li>
+      <li><span class="vstat weak">Demoted</span> Market sizes: driver monitoring about $2.9B (2025; GMI, Spherical Insights); fatigue risk management $0.8B (MarketIntelo; other firms range from $0.29B to $3B). Paid analyst estimates, not primary data. <a href="https://www.gminsights.com/industry-analysis/automotive-driver-monitoring-system-market">gminsights.com</a></li>
+      <li><span class="vstat weak">Demoted</span> Altini M. HRV4Training notes on personal baselines (7-day baseline, normal range from 1-2 months). Practitioner blog; <b>not independently checked</b>. <a href="https://marcoaltini.substack.com/p/getting-started-with-heart-rate-variability">marcoaltini.substack.com</a></li>
+    </ul>
+  </div>
+
+  <div class="footer">Storm Research v2 &middot; 21/22 citations independently verified against primary sources (1 practitioner blog not checked), 2026-11-18 &middot; 0 fabricated, 10 corrected, 3 demoted &middot; Reliability = evidence quality, not author confidence</div>
+
+</div>
+</body>
+</html>

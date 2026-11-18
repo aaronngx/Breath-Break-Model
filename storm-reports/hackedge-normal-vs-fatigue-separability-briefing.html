@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Storm Research: Phân biệt normal và fatigue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --blue: #2563eb; --blue-dark: #1e3a8a; --ink: #16203a; --muted: #5b6677; --line: #e4e9f2;
+    --bg-soft: #f6f8fc; --green: #15803d; --green-bg: #e9f6ee; --amber: #b45309; --amber-bg: #fdf3e7;
+    --slate: #475569; --slate-bg: #eef1f6; --red: #b91c1c; --red-bg: #fdecec;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Roboto', system-ui, sans-serif; color: var(--ink); background: #eef1f6; line-height: 1.62; font-weight: 400; -webkit-font-smoothing: antialiased; }
+  .page { max-width: 900px; margin: 0 auto; background: #fff; padding: 64px 72px 80px; box-shadow: 0 1px 40px rgba(22,32,58,0.08); }
+  .eyebrow { font-family: 'Roboto Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--blue); margin-bottom: 14px; }
+  h1 { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 40px; line-height: 1.12; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 18px; }
+  .lede { font-size: 17px; color: var(--muted); max-width: 640px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 26px; padding-top: 22px; border-top: 2px solid var(--line); font-family: 'Roboto Mono', monospace; font-size: 12px; color: var(--muted); }
+  .meta-row b { color: var(--ink); font-weight: 600; }
+  .verify-banner { margin-top: 22px; background: var(--green-bg); border: 1px solid #bfe3cc; border-radius: 8px; padding: 13px 18px; font-size: 13px; color: #14532d; display: flex; gap: 10px; align-items: baseline; }
+  .verify-banner b { font-weight: 700; }
+  .verify-banner .tag { font-family: 'Roboto Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; background: var(--green); color: #fff; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; }
+  .howto { margin-top: 18px; border: 1px solid var(--line); border-radius: 8px; padding: 18px 22px; background: var(--bg-soft); }
+  .howto h4 { font-family: 'Roboto Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .howto ul { list-style: none; }
+  .howto li { font-size: 13.5px; color: #2b3950; margin-bottom: 7px; padding-left: 16px; position: relative; }
+  .howto li::before { content: "›"; position: absolute; left: 0; color: var(--blue); font-weight: 700; }
+  .section { margin-top: 56px; }
+  .section-num { font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 600; color: var(--blue); letter-spacing: 0.05em; }
+  h2 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 25px; letter-spacing: -0.01em; color: var(--ink); margin: 6px 0 18px; line-height: 1.2; }
+  h2 .bar { display: inline-block; width: 38px; height: 4px; background: var(--blue); border-radius: 2px; vertical-align: middle; margin-right: 14px; }
+  p { margin-bottom: 14px; }
+  p.body-lg { font-size: 16.5px; }
+  .ceo { background: var(--bg-soft); border-left: 5px solid var(--blue); padding: 26px 30px; border-radius: 4px; font-size: 16.5px; }
+  .ceo strong { font-weight: 700; color: var(--blue-dark); }
+  .finding { border: 1px solid var(--line); border-radius: 10px; padding: 24px 26px; margin-bottom: 18px; position: relative; }
+  .finding-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 12px; }
+  .finding-title { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 18px; line-height: 1.3; color: var(--ink); flex: 1; }
+  .finding-rank { font-family: 'Roboto Mono', monospace; font-weight: 600; font-size: 13px; color: #fff; background: var(--ink); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .finding p { font-size: 15px; color: #283449; margin-bottom: 14px; }
+  .rel-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .rel { display: inline-flex; align-items: center; gap: 9px; font-family: 'Roboto Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 12px; border-radius: 20px; }
+  .rel.high { background: #e7f0fe; color: var(--blue); }
+  .rel.medhigh { background: var(--green-bg); color: var(--green); }
+  .rel.medium { background: var(--amber-bg); color: var(--amber); }
+  .rel.low { background: var(--red-bg); color: var(--red); }
+  .score { font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 600; color: var(--ink); }
+  .score b { font-size: 17px; }
+  .score span { color: var(--muted); font-weight: 400; }
+  .chips { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+  .chip-row { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; font-size: 13.5px; }
+  .chip-label { font-family: 'Roboto Mono', monospace; font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
+  .chip-label.sup { background: var(--green-bg); color: var(--green); }
+  .chip-label.chal { background: var(--red-bg); color: var(--red); }
+  .chip-label.fix { background: var(--amber-bg); color: var(--amber); }
+  .chip-row span.who { color: #2b3950; }
+  .chip-row span.who b { font-weight: 600; }
+  .contested { border: 1px dashed var(--amber); background: #fffaf2; border-radius: 10px; padding: 22px 26px; margin-bottom: 18px; }
+  .contested .tag { font-family: 'Roboto Mono', monospace; font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber); }
+  .contested h4 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 16px; color: var(--ink); margin: 6px 0 10px; }
+  .contested p { font-size: 14px; color: #4a3a22; margin-bottom: 0; }
+  .connection { background: linear-gradient(135deg, #16203a 0%, #1e3a8a 100%); color: #eaf0fb; border-radius: 12px; padding: 34px 38px; }
+  .connection h2 { color: #fff; }
+  .connection h2 .bar { background: #6ea8ff; }
+  .connection .section-num { color: #9ec1ff; }
+  .connection p { color: #d3def3; font-size: 16px; }
+  .connection .punch { font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 18px; color: #fff; line-height: 1.4; margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.18); }
+  .assume { border: 1px solid var(--line); border-left: 5px solid var(--amber); border-radius: 6px; padding: 24px 28px; background: #fffdf9; }
+  .assume h3 { font-family: 'Montserrat', sans-serif; font-size: 17px; font-weight: 700; color: var(--ink); margin-bottom: 10px; }
+  .assume p { font-size: 15px; color: #3a3320; }
+  .assume p:last-child { margin-bottom: 0; }
+  .action-item { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+  .action-item:last-child { border-bottom: none; }
+  .action-mark { font-family: 'Roboto Mono', monospace; font-weight: 600; font-size: 13px; color: var(--blue); flex-shrink: 0; width: 34px; }
+  .action-item .do { font-weight: 600; color: var(--ink); }
+  .action-item p { font-size: 14.5px; margin-bottom: 0; color: #2b3950; }
+  .frontier { border: 2px dashed var(--blue); border-radius: 12px; padding: 30px 34px; background: var(--bg-soft); }
+  .frontier .q { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 22px; line-height: 1.32; color: var(--blue-dark); margin-bottom: 16px; }
+  .frontier p { font-size: 15px; color: #2b3950; }
+  .oncam { margin-top: 18px; }
+  .oncam-col { border-radius: 10px; padding: 20px 24px; margin-bottom: 14px; }
+  .oncam-col.safe { background: var(--green-bg); border: 1px solid #bfe3cc; }
+  .oncam-col.caveat { background: var(--amber-bg); border: 1px solid #f0d9b5; }
+  .oncam-col.avoid { background: var(--red-bg); border: 1px solid #f3c9c9; }
+  .oncam-col h4 { font-family: 'Roboto Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
+  .oncam-col.safe h4 { color: var(--green); }
+  .oncam-col.caveat h4 { color: var(--amber); }
+  .oncam-col.avoid h4 { color: var(--red); }
+  .oncam-col ul { list-style: none; }
+  .oncam-col li { font-size: 14px; color: #233; margin-bottom: 8px; padding-left: 16px; position: relative; line-height: 1.5; }
+  .oncam-col li::before { content: "•"; position: absolute; left: 0; font-weight: 700; }
+  .oncam-col.safe li::before { color: var(--green); }
+  .oncam-col.caveat li::before { color: var(--amber); }
+  .oncam-col.avoid li::before { color: var(--red); }
+  .refs { margin-top: 56px; padding-top: 26px; border-top: 2px solid var(--line); }
+  .refs h3 { font-family: 'Roboto Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .refs ul { list-style: none; }
+  .refs li { font-size: 12.5px; color: var(--muted); margin-bottom: 11px; padding-left: 16px; position: relative; line-height: 1.5; }
+  .refs li::before { content: "›"; position: absolute; left: 0; color: var(--blue); font-weight: 700; }
+  .refs a { color: #34507e; text-decoration: none; }
+  .refs a:hover { text-decoration: underline; }
+  .refs .vstat { font-family: 'Roboto Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; margin-right: 6px; }
+  .vstat.ok { background: var(--green-bg); color: var(--green); }
+  .vstat.part { background: var(--amber-bg); color: var(--amber); }
+  .vstat.weak { background: var(--red-bg); color: var(--red); }
+  .footer { margin-top: 40px; font-family: 'Roboto Mono', monospace; font-size: 11px; color: #9aa6b8; text-align: center; }
+  @media (max-width: 640px) { .page { padding: 40px 24px 56px; } h1 { font-size: 30px; } }
+  @media print { body { background: #fff; } .page { box-shadow: none; max-width: 100%; padding: 0; } .connection, .oncam-col { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="eyebrow">Storm Research &middot; v2 (verified)</div>
+    <h1>Vì sao model chưa phân biệt được normal và fatigue, và cần làm gì</h1>
+    <p class="lede">Tổng hợp từ năm góc nhìn: người làm thực tế, nhà nghiên cứu, người hoài nghi, nhà kinh tế, nhà sử học. Mọi trích dẫn được kiểm tra lại với nguồn gốc trước khi đưa vào.</p>
+    <div class="meta-row">
+      <span><b>Ngày</b> &nbsp;2026-11-18</span>
+      <span><b>Phương pháp</b> &nbsp;5 góc nhìn do tác giả dựng + bản đồ mâu thuẫn</span>
+      <span><b>Người đọc</b> &nbsp;Nhóm BreathBreak (HackEdge, TI SK-AM62)</span>
+    </div>
+    <div class="verify-banner">
+      <span class="tag">Verified</span>
+      <span>Toàn bộ 19 trích dẫn giữ lại đều đã được kiểm tra với nguồn gốc ngày 2026-11-18. <b>Kết quả: 0 bịa, 9 sửa, 8 bị hạ hoặc bỏ vì không kiểm chứng được.</b> Điểm tin cậy phản ánh chất lượng bằng chứng sau kiểm chứng.</span>
+    </div>
+    <div class="howto">
+      <h4>Cách đọc</h4>
+      <ul>
+        <li><b>Năm góc nhìn do tác giả tự dựng</b> và dùng chung một khung câu hỏi. Chỗ chúng đồng ý chỉ nên coi là giả thuyết mạnh, chưa phải bằng chứng độc lập.</li>
+        <li><b>Điểm tin cậy 1–10</b> chấm theo chất lượng bằng chứng: nghiên cứu nhân quả đã bình duyệt &gt; số liệu chính thức &gt; khảo sát đơn lẻ &gt; suy luận tương tự &gt; preprint.</li>
+        <li><b>Số liệu nội bộ</b> (kết quả chạy trên data HackEdge và DROZY của nhóm) được ghi rõ là "nội bộ". Đó là kết quả của repo, không phải trích dẫn.</li>
+      </ul>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="section-num">01</div>
+    <h2><span class="bar"></span>Tóm tắt 60 giây</h2>
+    <div class="ceo">
+      <p style="margin-bottom:0;">Ba model HRV (Model A có mốc riêng, model không mốc, và model RMSSD train ngay trên HackEdge) đều cho AUC khoảng 0.50 trên data HackEdge (nội bộ). Kết quả đó đúng, và cả năm góc nhìn đều đồng ý như vậy. Data có 10 clip 30 giây; chỉ một người có cả hai điều kiện; "fatigue" thực chất là lúc bị bệnh; không có KSS, PVT hay giờ ngủ. Ngay cả khi làm đúng, HRV cũng là tín hiệu yếu: thiếu ngủ chỉ làm RMSSD giảm khoảng 0.24 SD, trong khi PVT lapses thay đổi khoảng 0.76 SD. Nghiên cứu 86 tài xế trên đường thật chỉ đạt 44% (3 lớp) khi test trên người model chưa thấy. <strong>Vì vậy muốn phân biệt được, không cần model khôn hơn mà cần đo đúng thứ "mệt" nghĩa là: PVT + KSS + lịch ngủ ngay lúc record, trên nhiều người, mỗi người có mốc của chính họ.</strong> Model fusion của nhóm (lịch ngủ + PVT, LOSO AUC 0.89 trên DROZY, nội bộ) đã đi đúng hướng này. Thứ còn thiếu là data HackEdge có label tương ứng. Còn đang tranh luận: độ dài clip quan trọng đến đâu. RMSSD 60 giây khớp tốt với bản 5 phút, nên 30 giây là một vấn đề nhưng không phải vấn đề chính.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-num">02</div>
+    <h2><span class="bar"></span>Năm phát hiện, xếp theo độ tin cậy</h2>
+
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">PVT nhạy với thiếu ngủ gấp khoảng 3 lần HRV</div>
+        <div class="finding-rank">1</div>
+      </div>
+      <div class="rel-row">
+        <div class="rel high">Reliability: High</div>
+        <div class="score"><b>9</b><span>/10</span></div>
+      </div>
+      <p>Meta-analysis 11 RCT (N=549, Zhang 2025): sau thiếu ngủ, RMSSD giảm SMD −0.24 (CI −0.47 đến −0.00, chỉ 4 nghiên cứu, vừa đủ có ý nghĩa thống kê). SDNN không đổi (−0.06), HF cũng không có ý nghĩa thống kê. Meta-analysis 70 bài (Lim &amp; Dinges 2010): PVT lapses g = −0.762, thời gian phản xạ g = −0.732. Với hiệu ứng cỡ 0.24, mỗi lớp cần cỡ vài trăm bản ghi mới phát hiện được (ước tính của tác giả báo cáo, không phải của bài báo). 10 clip thì không đủ để thấy gì.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Academic, Historian, Economist</b>: Zhang et al. 2025 (Front. Neurol.); Lim &amp; Dinges 2010 (Psychol. Bull.)</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who">Không ai. <b>Skeptic</b> thêm ý: HRV còn là tín hiệu không đặc hiệu, stress và bệnh cũng làm nó thay đổi.</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who">Lim &amp; Dinges: trích −0.762 theo Bảng 2 (abstract ghi −0.776). Zhang: bổ sung LF tăng +0.39; LF/HF 1.47 có I²=91% nên không đáng tin.</span></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">HRV đơn lẻ kém khi test trên người mới; thêm bối cảnh (giờ, thời gian thức) thì cải thiện rõ</div>
+        <div class="finding-rank">2</div>
+      </div>
+      <div class="rel-row">
+        <div class="rel medhigh">Reliability: Medium-high</div>
+        <div class="score"><b>8</b><span>/10</span></div>
+      </div>
+      <p><b>Persson et al. (IEEE T-ITS 2021):</b></p>
+      <ul>
+        <li>86 tài xế trên đường thật, label theo KSS.</li>
+        <li>Phân 3 lớp chỉ đạt 64%.</li>
+        <li>Khi để riêng từng người ra test (LOSO, 3 lớp), độ chính xác chỉ 44%. Tác giả kết luận phân loại HRV không phụ thuộc người là "kém".</li>
+        <li>Bản EMBC 2019 trên cùng loại data: khoảng 61%, 3 lớp.</li>
+      </ul>
+      <p><b>Lu et al. (IEEE T-ITS 2022):</b></p>
+      <ul>
+        <li>43 tài xế, đeo dây ngực tiêu dùng.</li>
+        <li>Chỉ dùng HRV: AUC 0.76.</li>
+        <li>Thêm thời gian lái và ngày/đêm: AUC 0.88.</li>
+      </ul>
+      <p>Tổng quan 18 bài của Lu 2022 cho thấy kết quả HRV không nhất quán, độ chính xác dao động 44–100% tuỳ thiết kế. Nguyên nhân chính là chênh lệch giữa test để riêng người (LOSO) và trộn bản ghi (k-fold). Kết quả này khớp với số nội bộ của nhóm: Model A đạt LOSO AUC 0.48 trên DROZY, còn fusion có lịch ngủ đạt 0.89.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Practitioner, Academic, Historian</b>: Persson 2021; Lu 2022 (T-ITS); Lu 2022 review (Accid. Anal. Prev.)</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who">Không ai phản bác. Con số 85% trong một số tóm tắt chưa rõ thuộc phép test nào.</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who">44% là LOSO 3 lớp, không phải nhị phân. Câu "không lặp lại được kết quả lab" thuộc bài EMBC 2019, không thuộc bài T-ITS. Bản EMBC là 3 lớp, không phải nhị phân.</span></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">Data HackEdge không thể trả lời câu hỏi; cẩn thận các "cách sửa" làm AUC tăng giả</div>
+        <div class="finding-rank">3</div>
+      </div>
+      <div class="rel-row">
+        <div class="rel medhigh">Reliability: Medium-high</div>
+        <div class="score"><b>8</b><span>/10</span></div>
+      </div>
+      <p><b>Data hiện có (nội bộ):</b></p>
+      <ul>
+        <li>8 file có label đều của một người (A). Người B chỉ có file normal.</li>
+        <li>"Bệnh" trùng với ngày record, cách đặt điện cực và buổi đo, nên model dễ học "file thuộc buổi nào" chứ không học "mệt".</li>
+        <li>Thực tế cỡ mẫu chỉ là 1 người. Với 3 normal và 5 fatigue, khoảng tin cậy của AUC rất rộng (ước tính thô, không có nguồn). Data này không chứng minh được tín hiệu có, cũng không chứng minh được là không có.</li>
+      </ul>
+      <p><b>Lỗi đánh giá thường gặp:</b></p>
+      <ul>
+        <li>Saeb 2017: 28/62 bài (45%) dùng CV trộn bản ghi. Sai số trung vị của nhóm này là 5.6%, so với 13.0% khi tách theo người.</li>
+        <li>Varma &amp; Simon 2006: trên data hoàn toàn ngẫu nhiên (sai số thật 50%), tuning bằng CV vẫn ra sai số khoảng 38–42%, tức là trông như có tín hiệu.</li>
+      </ul>
+      <p>Nhóm từng thấy đúng điều này: split leak cho 61%, LOO trung thực cho 0/7 (nội bộ).</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Cả 5 góc nhìn</b>: Saeb et al. 2017 (GigaScience); Varma &amp; Simon 2006 (BMC Bioinf.); Vabalas et al. 2019 (PLoS ONE)</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who">Không ai</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who">Vabalas: bias đến từ việc chọn feature hoặc tuning trên data gộp, không phải tại k-fold. Nested CV và train/test tách riêng thì không bị bias.</span></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">Clip 30 giây là một vấn đề thật, nhưng không phải vấn đề chính; nên ghi ≥ 60 giây, tốt nhất 2–5 phút, cùng tư thế</div>
+        <div class="finding-rank">4</div>
+      </div>
+      <div class="rel-row">
+        <div class="rel medium">Reliability: Medium</div>
+        <div class="score"><b>7</b><span>/10</span></div>
+      </div>
+      <p>Esco &amp; Flatt 2014 (23 vận động viên):</p>
+      <ul>
+        <li>lnRMSSD lúc nghỉ có ICC 0.98 ở 60 giây và giảm còn 0.81 ở 10 giây.</li>
+        <li>Tác giả kết luận 60 giây là chấp nhận được.</li>
+      </ul>
+      <p>Task Force 1996 khuyên dùng bản ghi 5 phút "trừ khi thiết kế nghiên cứu cần khác". Mức 5 phút chủ yếu đặt cho phân tích tần số; HF cần khoảng 1 phút, LF khoảng 2 phút. Shaffer &amp; Ginsberg 2017 gọi các đo cực ngắn là "proxy gây tranh cãi", không nên dùng thay thế bản 5 phút. Với 30 giây chỉ có khoảng 5–8 nhịp thở, nên nhịp thở chi phối RMSSD.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Historian, Academic</b>: Task Force 1996; Shaffer &amp; Ginsberg 2017</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who"><b>Skeptic</b>: Esco &amp; Flatt cho thấy 60 giây đã khớp tốt, nên độ dài không phải nút thắt.</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who">Esco &amp; Flatt: câu "sau vận động thì cửa sổ ngắn kém hơn" là sai. ICC sau vận động ở 10 giây là 0.90, còn cao hơn lúc nghỉ. Mẫu chỉ có nam vận động viên và không kiểm soát nhịp thở.</span></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">Mốc cá nhân cần nhiều ngày, không phải 3 clip</div>
+        <div class="finding-rank">5</div>
+      </div>
+      <div class="rel-row">
+        <div class="rel medium">Reliability: Medium</div>
+        <div class="score"><b>5</b><span>/10</span></div>
+      </div>
+      <p><b>Plews et al. 2012 (theo dõi vận động viên):</b></p>
+      <ul>
+        <li>Dùng trung bình trượt 7 ngày của lnRMSSD.</li>
+        <li>Mức thay đổi đáng kể là 0.5 × hệ số biến thiên (CV) của chính người đó, tính trong 2 tuần đầu làm mốc.</li>
+        <li>Đây chỉ là so sánh 2 ca (n=2).</li>
+      </ul>
+      <p><b>Grzesiak 2021 (phát hiện bệnh):</b></p>
+      <ul>
+        <li>Dùng vòng tay nghiên cứu ghi liên tục, so với mốc trước khi nhiễm. Mẫu: 39 người nhiễm H1N1, 24 người rhinovirus.</li>
+        <li>Đạt 92% (H1N1, ở mốc 24 giờ) và 88% (rhinovirus, ở mốc 36 giờ, lúc bắt đầu có triệu chứng).</li>
+        <li>Mẫu nhỏ và không có nhóm chứng.</li>
+      </ul>
+      <p>Muốn phát hiện "bệnh" thì cần thiết kế khác hẳn: ghi liên tục và đo cả nhiệt độ da. Đó không phải một clip 30 giây.</p>
+      <div class="chips">
+        <div class="chip-row"><span class="chip-label sup">Supported by</span><span class="who"><b>Practitioner, Academic, Skeptic</b>: Plews 2012 (Eur J Appl Physiol); Grzesiak 2021 (JAMA Netw Open)</span></div>
+        <div class="chip-row"><span class="chip-label chal">Challenged by</span><span class="who">Bằng chứng mỏng: mốc 7 ngày đến từ nghiên cứu 2 vận động viên.</span></div>
+        <div class="chip-row"><span class="chip-label fix">Corrected</span><span class="who">Ngưỡng là 0.5 × CV chứ không phải 0.5 SD. Bỏ "hướng dẫn AIS" vì không tìm được tài liệu gốc. Số mẫu của Grzesiak sửa thành 39 và 24.</span></div>
+      </div>
+    </div>
+
+    <div class="contested">
+      <div class="tag">Contested signal &middot; theo dõi, không khẳng định &middot; confidence 5/10</div>
+      <h4>"PVT-B 3 phút nhạy ngang PVT 10 phút, ngưỡng lapse 355 ms"</h4>
+      <p>Basner 2011 có validate PVT-B (N=31 thức 33 giờ; N=43 ngủ 4 giờ/đêm × 5 đêm), nhưng có ba điểm cần nói rõ:</p>
+      <ul>
+        <li>Ngưỡng 355 ms được chọn <b>sau khi đã xem data</b> và có thể phụ thuộc phần cứng.</li>
+        <li>Effect size thấp hơn trung bình 22.7%, có trường hợp thấp hơn tới 67.8%.</li>
+        <li>Với ngủ thiếu từng phần, mức nhạy chỉ là trung bình (0.76).</li>
+      </ul>
+      <p>Nên nói "PVT-B đã được validate và nhạy với thiếu ngủ", không nói "nhạy ngang". Repo đang dùng mốc 500 ms.</p>
+    </div>
+    <div class="contested">
+      <div class="tag">Contested signal &middot; theo dõi, không khẳng định &middot; confidence 4/10</div>
+      <h4>"Wearable phát hiện bệnh có PPV chỉ 4–10%"</h4>
+      <p>Esmaeilpour 2024 (JMIR Form Res, 577 nhân viên y tế) báo cáo PPV 4–10% và tỉ lệ báo động sai 2%/ngày. Chi tiết lấy từ trích đoạn vì trang gốc không mở được. Ý "báo động sai do stress" là người tham gia tự cho là vậy, nghiên cứu không chứng minh.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="connection">
+      <div class="section-num">03</div>
+      <h2><span class="bar"></span>Mối liên hệ ẩn</h2>
+      <p>Thoạt nhìn có mâu thuẫn. Một bên nói HRV đo được thay đổi do thiếu ngủ (Zhang 2025 có ý nghĩa thống kê) và RMSSD 60 giây đã đủ tin cậy. Bên kia, mọi model HRV của nhóm và cả nghiên cứu 86 tài xế đều thất bại trên người mới.</p>
+      <p>Ghép năm góc nhìn lại thì thấy chỗ chung. <b>Những phép đo mệt thành công trong lịch sử</b> (PVT, PERCLOS năm 1998, và model fusion của nhóm) <b>đều bắt đầu từ một label hành vi</b> (lapses, KSS, giờ thức) rồi mới kiểm tra cảm biến có bám theo label đó không. Những hướng thất bại thì bắt đầu từ cảm biến rồi đi tìm label. Nhà kinh tế nói thêm: cảm biến rẻ, label mới đắt. Vì vậy ngành có rất nhiều data cảm biến nhưng thiếu ground truth, và 10 clip không label của HackEdge là bản thu nhỏ của đúng tình trạng đó.</p>
+      <p class="punch">Model không sai. Thứ HackEdge thiếu là label: chỉ cần thêm PVT + KSS + giờ ngủ vào mỗi lần record là câu hỏi "có phân biệt được không" trả lời được, và HRV lúc đó có thể được thử như phần bổ sung.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="assume">
+      <h3>Giả định báo cáo dựa vào (và góc nhìn thứ 6 còn thiếu)</h3>
+      <p>Cả năm góc nhìn đều mặc định "fatigue" nghĩa là <b>buồn ngủ do thiếu ngủ</b>. Góc nhìn còn thiếu là <b>người định nghĩa sản phẩm</b>: BreathBreak muốn phát hiện buồn ngủ, kiệt sức sau giờ làm, hay bệnh? Nếu là bệnh, cả thiết kế đổi khác. Cần ghi liên tục nhiều ngày, đo nhiệt độ da và nhịp thở, và label theo triệu chứng hoặc xét nghiệm. Khi đó PVT không còn là label đúng.</p>
+      <p>Điểm thứ hai không lens nào đụng tới: <b>độ trễ phần cứng của PVT trên SK-AM62</b> (terminal qua SSH hoặc serial, bàn phím, màn hình). Basner nói ngưỡng lapse phụ thuộc phần cứng. Nếu độ trễ lệch vài chục ms giữa các máy, pvt_speed sẽ lệch theo máy chứ không theo người. Phải đo độ trễ này trước khi so PVT giữa các buổi.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-num">04</div>
+    <h2><span class="bar"></span>Cần làm gì khác đi</h2>
+    <p class="body-lg" style="color:var(--muted);">Cho nhóm BreathBreak: việc làm hôm nay và cho đợt thu data tiếp theo.</p>
+    <div class="action-item">
+      <div class="action-mark">01</div>
+      <div><span class="do">Hôm nay: báo cáo AUC 0.50 trên HackEdge một cách trung thực, và demo model fusion trên DROZY.</span><p>Đi kèm: <code>scripts/test_hackedge_models.py</code> (3 model, AUC 0.50), quality gate, và LOSO AUC 0.89 của fusion. Không dùng split leak (61%) và không augment riêng lớp normal (phát hiện 3).</p></div>
+    </div>
+    <div class="action-item">
+      <div class="action-mark">02</div>
+      <div><span class="do">Chốt label, chỉ số đánh giá và cỡ mẫu tối thiểu trước khi thu data.</span><p>Label: buồn ngủ khi KSS ≥ 7 (PVT là feature và kiểm tra chéo). Chỉ số: AUC khi để riêng từng người (LOSO). Cỡ mẫu: khoảng 10 người, mỗi người ≥ 2 buổi. Viết xuống trước để sau không chỉnh dần cho tới khi số đẹp (phát hiện 3).</p></div>
+    </div>
+    <div class="action-item">
+      <div class="action-mark">03</div>
+      <div><span class="do">Mỗi buổi record cùng một quy trình, tổng khoảng 10 phút.</span><p>Gồm 6 bước:</p><ul><li>Ngồi nghỉ 2 phút.</li><li>Ghi ECG ≥ 2 phút (tốt nhất 5) cùng tư thế, không nói chuyện.</li><li>Làm PVT 3 phút ngay sau đó.</li><li>Hỏi KSS, giờ thức dậy và số giờ ngủ.</li><li>Ghi ngày giờ.</li><li>Ghi chú nếu có cà phê, vận động hay đang bệnh.</li></ul><p>Kiểm tra tín hiệu 10 giây trước khi ghi để tránh PPG phẳng (phát hiện 4).</p></div>
+    </div>
+    <div class="action-item">
+      <div class="action-mark">04</div>
+      <div><span class="do">Thiết kế trong từng người: mỗi người có buổi tỉnh và buổi mệt tự nhiên.</span><p>Ví dụ sáng ngủ đủ và chiều tối sau ngày học dài. Mốc HRV tính từ nhiều buổi tỉnh của chính người đó. Chỉ gắn cờ khi mức giảm vượt 0.5 × CV của họ (phát hiện 5). Đây là cách đúng để thử ý tưởng của anh Nhat.</p></div>
+    </div>
+    <div class="action-item">
+      <div class="action-mark">05</div>
+      <div><span class="do">Đánh giá: để riêng từng người ra test, chọn feature và tune bên trong vòng train.</span><p>Dùng nested CV hoặc tách riêng test set ngay từ đầu (Saeb, Varma &amp; Simon, Vabalas). Báo cáo cả khoảng tin cậy, vì với 10 người con số sẽ dao động mạnh.</p></div>
+    </div>
+    <div class="action-item">
+      <div class="action-mark">06</div>
+      <div><span class="do">Đo độ trễ PVT trên board trước khi so giữa các máy.</span><p>Giữ ngưỡng 500 ms như repo. Chỉ chuyển sang 355 ms khi đã đo độ trễ và ghi rõ ngưỡng đó là post hoc (Basner 2011).</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-num">04b</div>
+    <h2><span class="bar"></span>Điều gì an toàn để khẳng định</h2>
+    <div class="oncam">
+      <div class="oncam-col safe">
+        <h4>✓ An toàn: đã kiểm với nguồn gốc</h4>
+        <ul>
+          <li>Thiếu ngủ làm RMSSD giảm ít (SMD −0.24) và làm PVT lapses tăng nhiều (g −0.76) (Zhang 2025; Lim &amp; Dinges 2010).</li>
+          <li>Với 86 tài xế trên đường thật, phân loại HRV 3 lớp khi để riêng từng người chỉ đạt 44% (Persson 2021).</li>
+          <li>Thêm thời gian lái và ngày/đêm nâng AUC từ 0.76 lên 0.88 (Lu 2022).</li>
+          <li>45% bài wearable được rà soát dùng CV trộn bản ghi, làm kết quả đẹp hơn thật (Saeb 2017).</li>
+          <li>Trên data HackEdge, 3 model HRV đều có AUC khoảng 0.50 (nội bộ, chạy lại được).</li>
+        </ul>
+      </div>
+      <div class="oncam-col caveat">
+        <h4>⚠ Nói kèm điều kiện</h4>
+        <ul>
+          <li>"60 giây RMSSD là đủ": đúng lúc nghỉ, trên nam vận động viên, không kiểm soát nhịp thở (Esco &amp; Flatt 2014).</li>
+          <li>"PVT-B 3 phút đã được validate": đúng, nhưng kém nhạy hơn bản 10 phút và ngưỡng 355 ms là post hoc.</li>
+          <li>"Mốc 7 ngày, ngưỡng 0.5 × CV": lấy từ nghiên cứu 2 vận động viên.</li>
+          <li>Fusion LOSO AUC 0.89 là trên DROZY (14 người, lab). Chưa test trên phần cứng của nhóm.</li>
+        </ul>
+      </div>
+      <div class="oncam-col avoid">
+        <h4>✕ Không khẳng định</h4>
+        <ul>
+          <li>"Model của nhóm phân biệt được normal và fatigue trên HackEdge."</li>
+          <li>"HRV phát hiện được mệt", không có điều kiện đi kèm.</li>
+          <li>"Data HackEdge chứng minh HRV không có tín hiệu": n=1, không chứng minh được theo hướng nào.</li>
+          <li>Con số 85% của Persson, vì chưa rõ thuộc phép test nào.</li>
+          <li>"Bệnh làm HRV giảm 3–5 lần so với tập luyện", và các con số thị trường hay định giá chưa kiểm chứng: đã bỏ khỏi báo cáo.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-num">05</div>
+    <h2><span class="bar"></span>Câu hỏi tiên phong</h2>
+    <div class="frontier">
+      <div class="q">Với cùng một người trong cùng một ngày, mức giảm HRV so với mốc riêng có thêm được thông tin gì ngoài lịch ngủ + PVT không?</div>
+      <p>Nếu không, HRV chỉ nên làm việc nhắc làm lại PVT (như thiết kế hiện tại) và nhóm có thể bỏ phần cứng ECG khỏi phần chấm điểm. Nếu có, ý tưởng "học mức thay đổi của từng người" của anh Nhat trở thành đóng góp chính. Chưa lens nào trả lời được câu này, vì các nghiên cứu hoặc chỉ dùng HRV, hoặc gộp tất cả. Trả lời được chỉ cần đúng bộ data ở mục 04: khoảng 10 người, mỗi buổi có ECG + PVT + KSS + lịch ngủ. Sau đó so AUC LOSO của fusion với và không có HRV.</p>
+    </div>
+  </section>
+
+  <div class="refs">
+    <h3>Nguồn bằng chứng &middot; trạng thái kiểm chứng</h3>
+    <ul>
+      <li><span class="vstat ok">Confirmed</span> Zhang S, Niu X, Ma J, et al. 2025. Effects of sleep deprivation on heart rate variability: a systematic review and meta-analysis. Front. Neurol. 16:1556784. RMSSD SMD −0.24 (4 nghiên cứu), LF/HF I²=91%. <a href="https://www.frontiersin.org/journals/neurology/articles/10.3389/fneur.2025.1556784/full">frontiersin.org</a></li>
+      <li><span class="vstat ok">Confirmed</span> Lim J, Dinges DF. 2010. A meta-analysis of the impact of short-term sleep deprivation on cognitive variables. Psychol. Bull. 136(3):375–389. Lapses g −0.762 (Bảng 2), RT g −0.732. <a href="https://www.med.upenn.edu/uep/assets/user-content/documents/LimDinges2010MetaAnalysis.pdf">med.upenn.edu</a></li>
+      <li><span class="vstat part">Corrected</span> Persson A, Jonasson H, Fredriksson I, Wiklund U, Ahlström C. 2021. Heart rate variability for classification of alert versus sleep deprived drivers in real road driving conditions. IEEE T-ITS 22(6):3316–3325. 86 tài xế; 64% với 3 lớp; 44% LOSO 3 lớp. <a href="https://doi.org/10.1109/TITS.2020.2981941">doi.org</a></li>
+      <li><span class="vstat part">Corrected</span> Persson A, et al. 2019. Heart rate variability for driver sleepiness classification in real road driving conditions. IEEE EMBC, 6537–6540. Khoảng 61%, 3 lớp (không phải nhị phân). <a href="https://pubmed.ncbi.nlm.nih.gov/31947339/">pubmed</a></li>
+      <li><span class="vstat ok">Confirmed</span> Lu K, Karlsson JG, Sjörs Dahlman A, Sjöqvist BA, Candefjord S. 2022. Detecting driver sleepiness using consumer wearable devices in manual and partial automated real-road driving. IEEE T-ITS 23(5):4801–4810. AUC 0.76 chỉ HRV, 0.88 khi thêm bối cảnh. <a href="https://research.chalmers.se/en/publication/527879">chalmers.se</a></li>
+      <li><span class="vstat ok">Confirmed</span> Lu K, Sjörs Dahlman A, Karlsson J, Candefjord S. 2022. Detecting driver fatigue using heart rate variability: a systematic review. Accid. Anal. Prev. 178:106830. 18 bài, độ chính xác 44–100%. <a href="https://research.chalmers.se/publication/532387">chalmers.se</a></li>
+      <li><span class="vstat part">Corrected</span> Esco MR, Flatt AA. 2014. Ultra-short-term heart rate variability indexes at rest and post-exercise in athletes. J Sports Sci Med 13:535–541. n=23; ICC 0.98 (60 s) và 0.81 (10 s) lúc nghỉ; sau vận động không kém hơn. <a href="https://www.jssm.org/jssm-13-535.xml-Fulltext">jssm.org</a></li>
+      <li><span class="vstat ok">Confirmed</span> Task Force of the ESC and NASPE. 1996. Heart rate variability: standards of measurement, physiological interpretation and clinical use. Circulation 93(5):1043–1065. Ưu tiên bản ghi 5 phút. <a href="https://doi.org/10.1161/01.CIR.93.5.1043">doi.org</a></li>
+      <li><span class="vstat ok">Confirmed</span> Shaffer F, Ginsberg JP. 2017. An overview of heart rate variability metrics and norms. Front. Public Health 5:258. Tổng quan tường thuật; gọi đo cực ngắn là "controversial proxies". <a href="https://www.frontiersin.org/journals/public-health/articles/10.3389/fpubh.2017.00258">frontiersin.org</a></li>
+      <li><span class="vstat part">Corrected</span> Plews DJ, Laursen PB, Kilding AE, Buchheit M. 2012. Heart rate variability in elite triathletes, is variation in variability the key to effective training? Eur J Appl Physiol 112:3729–3741. n=2; trung bình 7 ngày; ngưỡng 0.5 × CV (theo luận án AUT 2014). <a href="https://hdl.handle.net/10292/7122">hdl.handle.net</a></li>
+      <li><span class="vstat part">Corrected</span> Basner M, Mollicone D, Dinges DF. 2011. Validity and sensitivity of a brief psychomotor vigilance test (PVT-B) to total and partial sleep deprivation. Acta Astronautica 69:949–959. Ngưỡng 355 ms post hoc; effect size thấp hơn trung bình 22.7%. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3197786">pmc</a></li>
+      <li><span class="vstat part">Corrected</span> Dinges DF, Mallis MM, Maislin G, Powell JW. 1998. Evaluation of techniques for ocular measurement as an index of fatigue and the basis for alertness management. NHTSA DOT HS 808 762. 6 công nghệ, 14 người thức 42 giờ; chỉ PERCLOS bám theo PVT lapses. Báo cáo của chính phủ, không bình duyệt. <a href="https://rosap.ntl.bts.gov/view/dot/2518">rosap.ntl.bts.gov</a></li>
+      <li><span class="vstat ok">Confirmed</span> Saeb S, Lonini L, Jayaraman A, Mohr DC, Kording KP. 2017. The need to approximate the use-case in clinical machine learning. GigaScience 6(5):gix019. 28/62 bài dùng CV trộn bản ghi; sai số trung vị 5.6% so với 13.0%. <a href="https://academic.oup.com/gigascience/article/6/5/gix019/3071704">oup.com</a></li>
+      <li><span class="vstat ok">Confirmed</span> Varma S, Simon R. 2006. Bias in error estimation when using cross-validation for model selection. BMC Bioinformatics 7:91. Data mô phỏng không có tín hiệu; nested CV gần như không bias. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC1397873">pmc</a></li>
+      <li><span class="vstat part">Corrected</span> Vabalas A, Gowen E, Poliakoff E, Casson AJ. 2019. Machine learning algorithm validation with a limited sample size. PLoS ONE 14(11):e0224365. Bias đến từ chọn feature hoặc tuning trên data gộp. <a href="https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0224365">plos.org</a></li>
+      <li><span class="vstat part">Corrected</span> Grzesiak E, Bent B, McClain MT, et al. 2021. Assessment of the feasibility of using noninvasive wearable biometric monitoring sensors to detect influenza and the common cold before symptom onset. JAMA Netw Open 4(9):e2128534. 39 người H1N1 và 24 người rhinovirus; 92% và 88% tại mốc thời gian tốt nhất. <a href="https://jamanetwork.com/journals/jamanetworkopen/fullarticle/2784555">jamanetwork.com</a></li>
+      <li><span class="vstat weak">Contested</span> Esmaeilpour Z, et al. 2024. Detection of common respiratory infections, including COVID-19, using consumer wearable devices in health care workers. JMIR Form Res 8:e53716. PPV 4–10%; số liệu lấy từ trích đoạn. <a href="https://formative.jmir.org/2024/1/e53716">jmir.org</a></li>
+      <li><span class="vstat ok">Confirmed</span> SiliconANGLE, 14/10/2025. Oura raises $900M at ~$11B valuation. Số do công ty tự công bố, chưa kiểm toán. <a href="https://siliconangle.com/2025/10/14/oura-raises-900m-wearable-health-tech-smart-ring/">siliconangle.com</a></li>
+      <li><span class="vstat ok">Confirmed</span> FDA CDRH. 14/07/2025. Warning letter to WHOOP, Inc. (CMS #709755): tính năng Blood Pressure Insights là thiết bị y tế chưa được cấp phép. <a href="https://www.fda.gov/inspections-compliance-enforcement-and-criminal-investigations/warning-letters/whoop-inc-709755-07142025">fda.gov</a></li>
+    </ul>
+  </div>
+
+  <div class="footer">Storm Research v2 &middot; 19/19 trích dẫn giữ lại đã kiểm với nguồn gốc, 2026-11-18 &middot; 0 bịa, 9 sửa, 8 hạ hoặc bỏ &middot; Độ tin cậy = chất lượng bằng chứng, không phải độ tự tin của tác giả</div>
+
+</div>
+</body>
+</html>
