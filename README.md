@@ -27,8 +27,9 @@ On real data, the HRV-only models (A and B) score at chance for fatigue and flag
 Output: fatigue risk and `OK` / `RETEST` / `ALERT`. **No stress score is ever produced**: under the EU AI Act guidelines, inferring fatigue at work is allowed but general stress monitoring is not.
 
 ```bash
-python scripts/evaluate_fusion.py --drozy data/DROZY --wesad data/WESAD   # evaluate + save models/fatigue_fusion.joblib
-python scripts/check_fatigue.py --wake 06:30 --slept 7                     # on the device: check-in + 3-min PVT
+python scripts/evaluate_fusion.py --drozy data/DROZY --wesad data/WESAD   # evaluate + save models/fatigue_fusion.joblib and fatigue_schedule.joblib
+python scripts/check_fatigue.py --wake 06:30 --slept 7                     # on the device: schedule check-in only, no PVT (default)
+python scripts/check_fatigue.py --wake 06:30 --slept 7 --pvt               # optional: add the 3-min PVT (more accurate)
 python -m breathbreak.pvt --minutes 3                                      # PVT on its own
 ```
 

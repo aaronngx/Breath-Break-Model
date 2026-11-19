@@ -95,6 +95,8 @@ def main():
     ap.add_argument("--pvt-seconds", type=float, default=180.0)
     ap.add_argument("--wake-hour", type=float, default=7.0)
     ap.add_argument("--sleep-hours", type=float, default=8.0)
+    ap.add_argument("--skip-hrv", action="store_true",
+                    help="skip the HRV comparisons (no ECG / mne needed); keeps reports/fusion_summary.json")
     a = ap.parse_args()
 
     # ---- main set: schedule + PVT ----
@@ -106,31 +108,33 @@ def main():
     }
     show("DROZY, all PVT sessions (leave-one-subject-out, session level)", main_res)
 
-    # ---- HRV set ----
-    print("\nComputing 3-min HRV (beats are cached in cache/beats)...", flush=True)
-    hrv_win = build_extended_hrv_table(load_drozy(a.drozy, CFG), CFG)
-    hrv_ses = (hrv_win.groupby(["subject", "session"])[list(EXTENDED_FEATURE_NAMES)].median()
-               .add_prefix("hrv_").reset_index())
-    sh = st.merge(hrv_ses, on=["subject", "session"]).dropna(subset=HRV_COLS).reset_index(drop=True)
-    hrv_res = {
-        "schedule + PVT": metrics(sh, loso_proba(sh, list(FUSION_FEATURES))),
-        "HRV only": metrics(sh, loso_proba(sh, HRV_COLS, C=0.1)),
-        "schedule + PVT + HRV": metrics(sh, loso_proba(sh, list(FUSION_FEATURES) + HRV_COLS, C=0.1)),
-    }
-    show("DROZY, sessions that also have HRV (same sessions for all three)", hrv_res)
+    hrv_res, trig = {}, {}
+    if not a.skip_hrv:
+        # ---- HRV set ----
+        print("\nComputing 3-min HRV (beats are cached in cache/beats)...", flush=True)
+        hrv_win = build_extended_hrv_table(load_drozy(a.drozy, CFG), CFG)
+        hrv_ses = (hrv_win.groupby(["subject", "session"])[list(EXTENDED_FEATURE_NAMES)].median()
+                   .add_prefix("hrv_").reset_index())
+        sh = st.merge(hrv_ses, on=["subject", "session"]).dropna(subset=HRV_COLS).reset_index(drop=True)
+        hrv_res = {
+            "schedule + PVT": metrics(sh, loso_proba(sh, list(FUSION_FEATURES))),
+            "HRV only": metrics(sh, loso_proba(sh, HRV_COLS, C=0.1)),
+            "schedule + PVT + HRV": metrics(sh, loso_proba(sh, list(FUSION_FEATURES) + HRV_COLS, C=0.1)),
+        }
+        show("DROZY, sessions that also have HRV (same sessions for all three)", hrv_res)
 
-    # ---- HRV retest trigger ----
-    thr = np.log(1 - RETEST_RMSSD_DROP)
-    trig = {"drozy_alert": float((hrv_win[hrv_win.label == 0].rmssd < thr).mean()),
-            "drozy_fatigued": float((hrv_win[hrv_win.label == 1].rmssd < thr).mean())}
-    if a.wesad:
-        from breathbreak.data.wesad import load_wesad
-        w = build_extended_hrv_table(load_wesad(a.wesad, kind="ecg"), CFG)
-        trig["wesad_relaxed"] = float((w[w.session == "baseline"].rmssd < thr).mean())
-        trig["wesad_stressed"] = float((w[w.session == "stress"].rmssd < thr).mean())
-    print(f"\n=== HRV retest trigger (RMSSD >= {RETEST_RMSSD_DROP:.0%} below own baseline), share of 3-min windows ===")
-    for k, v in trig.items():
-        print(f"  {k:16s} {v:.0%}")
+        # ---- HRV retest trigger ----
+        thr = np.log(1 - RETEST_RMSSD_DROP)
+        trig = {"drozy_alert": float((hrv_win[hrv_win.label == 0].rmssd < thr).mean()),
+                "drozy_fatigued": float((hrv_win[hrv_win.label == 1].rmssd < thr).mean())}
+        if a.wesad:
+            from breathbreak.data.wesad import load_wesad
+            w = build_extended_hrv_table(load_wesad(a.wesad, kind="ecg"), CFG)
+            trig["wesad_relaxed"] = float((w[w.session == "baseline"].rmssd < thr).mean())
+            trig["wesad_stressed"] = float((w[w.session == "stress"].rmssd < thr).mean())
+        print(f"\n=== HRV retest trigger (RMSSD >= {RETEST_RMSSD_DROP:.0%} below own baseline), share of 3-min windows ===")
+        for k, v in trig.items():
+            print(f"  {k:16s} {v:.0%}")
 
     # ---- PVT and KSS, for context ----
     print("\nMedian PVT lapses (first 3 min) by session:",
@@ -146,14 +150,26 @@ def main():
                 "models/fatigue_fusion.joblib")
     coefs = dict(zip(FUSION_FEATURES, np.round(model.named_steps["clf"].coef_[0], 3)))
     print("Fusion coefficients (standardised; + pushes toward fatigued):", coefs)
+    # schedule-only model: the default on the device (no PVT, no waiting)
+    sched = make_fusion_model().fit(st[list(SCHEDULE_FEATURES)].to_numpy(float), st.label.to_numpy(int))
+    joblib.dump({"model": sched, "features": list(SCHEDULE_FEATURES), "alert_threshold": CFG.alert_threshold,
+                 "trained_on": "DROZY", "loso": main_res["schedule only"],
+                 "schedule_assumption": f"wake {a.wake_hour:g}:00 day 1, {a.sleep_hours:g} h sleep"},
+                "models/fatigue_schedule.joblib")
+    print("Schedule-only coefficients:",
+          dict(zip(SCHEDULE_FEATURES, np.round(sched.named_steps["clf"].coef_[0], 3))))
 
+    if a.skip_hrv:
+        print("\nSaved models/fatigue_fusion.joblib and models/fatigue_schedule.joblib "
+              "(summary not rewritten: --skip-hrv)")
+        return
     os.makedirs("reports", exist_ok=True)
     with open("reports/fusion_summary.json", "w") as f:
         json.dump({"main": main_res, "hrv_set": hrv_res, "hrv_retest_trigger": trig,
                    "coefficients": {k: float(v) for k, v in coefs.items()},
                    "assumptions": {"pvt_seconds": a.pvt_seconds, "wake_hour": a.wake_hour,
                                    "sleep_hours": a.sleep_hours}}, f, indent=2)
-    print("\nSaved models/fatigue_fusion.joblib and reports/fusion_summary.json")
+    print("\nSaved models/fatigue_fusion.joblib, models/fatigue_schedule.joblib and reports/fusion_summary.json")
 
 
 if __name__ == "__main__":
